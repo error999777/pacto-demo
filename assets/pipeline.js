@@ -25,6 +25,7 @@ let customerId;
 let dealId;
 let focusedCall;
 let allCalls = true;
+let dossierPane = "overview";
 let suggestionDraft;
 let noticeTimer;
 
@@ -76,6 +77,7 @@ function showLogin() {
   data = undefined;
   customerId = dealId = focusedCall = suggestionDraft = undefined;
   view = location.hash === "#settings" ? "settings" : "queue";
+  dossierPane = "overview";
   $("search").value = "";
   $("main").dataset.open = "false";
   for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
@@ -99,6 +101,7 @@ function setView(next) {
   view = next;
   customerId = dealId = focusedCall = suggestionDraft = undefined;
   allCalls = true;
+  dossierPane = "overview";
   $("main").dataset.open = "false";
   render();
   $("title").focus();
@@ -109,6 +112,7 @@ function select(client, deal, call) {
   dealId = deal;
   focusedCall = call;
   allCalls = view === "clients";
+  dossierPane = "overview";
   suggestionDraft = undefined;
   $("main").dataset.open = "true";
   render();
@@ -124,13 +128,8 @@ function finance(deal) {
 }
 
 function render() {
-  const labels = {
-    queue: ["Нужны действия", "Сделки, где имеет смысл сделать следующий шаг"],
-    clients: ["Все клиенты", "Сделки, задачи и история общения"],
-    results: ["Результаты", "Исходы сделок и действия после общения"],
-    settings: ["Настройки", "Источники и полнота истории"]
-  };
-  [$("title").textContent, $("subtitle").textContent] = labels[view];
+  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Результаты", settings: "Настройки"};
+  $("title").textContent = labels[view];
   for (const button of $("nav").querySelectorAll("[data-view]")) {
     if (button.dataset.view === view) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
@@ -140,9 +139,6 @@ function render() {
   $("inbox").hidden = view === "results" || view === "settings";
   $("results").hidden = view !== "results";
   $("settings").hidden = view !== "settings";
-  $("preview-note").textContent = view === "settings"
-    ? "Демо с вымышленной историей. Здесь можно посмотреть порядок подключения."
-    : "Демо на вымышленных сделках. Можно пройти сценарий технической встречи.";
   if (view === "settings") {
     renderSettings();
     return;
@@ -167,8 +163,6 @@ function renderList() {
         aria-pressed="${focusedCall === item.call_id}">
         <strong>${index + 1}. ${esc(client.name)}</strong>
         <span>${esc(deal.title)}</span>
-        <span class="small muted">${stages[deal.stage]}</span>
-        <span class="small muted row-meta">${esc(item.angle)}</span>
         <span class="statusline"><span class="tag">${suggestionLabels[item.state]}</span>
         <span class="small muted">${esc(finance(deal))}</span></span></button>`;
     }).join("") || '<p class="empty">Сейчас нет сделок, требующих контакта или проверки.</p>';
@@ -227,39 +221,50 @@ function renderDossier() {
   dealId = deal?.id;
   const calls = clientCalls(client.id);
   const displayedCalls = allCalls || !deal ? calls : calls.filter(call => call.deal_id === deal.id);
-  const withText = displayedCalls.filter(call => call.lines.length).length;
+  const inside = allCalls ? deals : deal ? [deal] : [];
+  const tasks = inside.flatMap(owner => owner.tasks.map(task => ({...task, deal_title: owner.title})));
+  tasks.sort((a, b) => (a.status !== "open") - (b.status !== "open"));
   const next = deal?.suggestions.find(item => item.call_id === focusedCall) ||
     data.queue.find(item => item.deal_id === dealId) ||
     deal?.suggestions.find(item => ["contacted", "invited", "pending"].includes(item.state));
   $("detail").innerHTML = `
-    <button type="button" class="back quiet" data-back>← К списку</button>
-    <header class="client-header"><h2 tabindex="-1" id="client-heading">${esc(client.name)}</h2></header>
+    <header class="client-header">
+      <button type="button" class="back quiet" data-back>← К списку</button>
+      <h2 tabindex="-1" id="client-heading">${esc(client.name)}</h2>
+    </header>
     ${deals.length ? `<div class="client-deals" aria-label="Сделки клиента">
       ${deals.map(item => `<button type="button" class="project" data-project="${esc(item.id)}" aria-pressed="${item.id === dealId}">
-        <strong>${esc(item.title)}</strong><span class="small muted">${esc(stages[item.stage])} · ${esc(dealResults[item.result])}</span></button>`).join("")}
+        <span><strong>${esc(item.title)}</strong><span class="small muted project-stage">${stages[item.stage]}</span></span>
+        <span class="tag status-chip" data-tone="${item.result === "won" ? "success" : "neutral"}">${dealResults[item.result]}</span></button>`).join("")}
     </div>` : '<p class="muted">Сделки ещё не привязаны.</p>'}
-    ${deal ? renderDeal(deal, next, displayedCalls, allCalls ? deals : [deal]) : ""}
-    <section class="dossier-section" aria-labelledby="call-heading">
-      <h3 id="call-heading">История общения <span class="small muted">${displayedCalls.length}</span></h3>
-      ${deal ? `<div class="filters" aria-label="Какие события показать">
-        <button type="button" data-scope="client" aria-pressed="${allCalls}">Вся история клиента</button>
-        <button type="button" data-scope="deal" aria-pressed="${!allCalls}">По этой сделке</button>
+    ${deal ? `<div class="mobile-project">
+      <label for="project-select">Сделка</label>
+      <select id="project-select" name="project">${deals.map(item =>
+        `<option value="${esc(item.id)}"${item.id === dealId ? " selected" : ""}>${esc(item.title)}</option>`).join("")}</select>
+      <div class="row-head"><span class="small muted">${stages[deal.stage]}</span>
+        <span class="tag status-chip" data-tone="${deal.result === "won" ? "success" : "neutral"}">${dealResults[deal.result]}</span></div>
+    </div>` : ""}
+    ${deal ? `<div class="dossier-nav" role="group" aria-label="Досье клиента">
+      ${[["overview", "Обзор"], ["tasks", "Задачи", tasks.length], ["history", "История", displayedCalls.length]]
+        .map(([id, label, count]) => `<button type="button" data-pane="${id}" aria-pressed="${dossierPane === id}">
+          ${label}${count == null ? "" : ` <span class="item-count">${count}</span>`}</button>`).join("")}
       </div>` : ""}
-      ${displayedCalls.length ? `<p class="small muted history-coverage">С текстом для разбора: ${withText} из ${displayedCalls.length}. Показаны полученные события.</p>` : ""}
-      <div class="call-list">${displayedCalls.map(renderCall).join("") || '<p class="empty">Событий пока нет.</p>'}</div>
-    </section>`;
+    ${deal && dossierPane === "overview" ? renderDeal(deal, next, displayedCalls) :
+      `${deal ? `<div class="scope" role="group" aria-label="Какие данные показать">
+        <button type="button" data-scope="deal" aria-pressed="${!allCalls}">По сделке</button>
+        <button type="button" data-scope="client" aria-pressed="${allCalls}">По клиенту</button>
+      </div>` : ""}
+      ${deal && dossierPane === "tasks" ? renderTasks(tasks, inside.length > 1) : renderHistory(displayedCalls)}`}`;
 }
 
-function renderDeal(deal, next, calls, taskDeals) {
+function renderDeal(deal, next, calls) {
   const last = calls.find(call => call.deal_id === deal.id);
   const dealSource = entity(data.sources || [], deal.source_id);
   const actions = [...deal.actions].reverse();
-  const tasks = taskDeals.flatMap(owner => owner.tasks.map(task => ({...task, deal_title: owner.title})));
-  tasks.sort((a, b) => (a.status !== "open") - (b.status !== "open"));
   return `
     ${next ? renderNext(next, deal) : ""}
-    <section class="deal-header dossier-section" aria-labelledby="context-heading">
-      <h3 id="context-heading">Контекст сделки</h3><p>${esc(deal.scope)}</p>
+    <details class="dossier-block">
+      <summary>Контекст сделки</summary><p>${esc(deal.scope)}</p>
       <dl class="deal-facts">
         <div><dt>Менеджер</dt><dd>${esc(deal.manager)}</dd></div>
         <div><dt>Данные сделки</dt><dd>${esc(dealSource?.name || "Импорт JSON")}</dd></div>
@@ -267,38 +272,44 @@ function renderDeal(deal, next, calls, taskDeals) {
         ${deal.contribution == null ? "" : `<div><dt>Вклад после прямых затрат</dt><dd>${money(deal.contribution)}</dd></div>`}
       </dl>
       ${last ? `<p class="small muted">Последний контакт · ${channels[last.channel || "call"]} · ${esc(date(last.at))} · ${callResults[last.analysis?.result] || "Без разбора"}</p>` : ""}
-    </section>
-    ${actions.length ? `<section class="dossier-section" aria-labelledby="action-heading">
-      <h3 id="action-heading">Результаты действий</h3><div class="task-list">
+    </details>
+    ${actions.length ? `<details class="dossier-block" open>
+      <summary>Результаты действий <span class="item-count">${actions.length}</span></summary><div class="task-list">
       ${actions.map(action => `<div class="task"><strong>${actionLabels[action.kind]}</strong>
-        <p class="small muted">${esc(date(action.at))} · ${esc(action.note)}</p></div>`).join("")}</div></section>` : ""}
-    <section class="dossier-section" aria-labelledby="task-heading">
-      <h3 id="task-heading">Задачи и обещания <span class="small muted">${tasks.length}</span></h3>
-      <div class="filters" aria-label="Какие задачи показать">
-        <button type="button" data-scope="client" aria-pressed="${allCalls}">По всем сделкам клиента</button>
-        <button type="button" data-scope="deal" aria-pressed="${!allCalls}">По выбранной сделке</button>
-      </div>
-      <div class="task-list">${tasks.map(task => `<div class="task">
+        <p class="small muted">${esc(date(action.at))} · ${esc(action.note)}</p></div>`).join("")}</div></details>` : ""}`;
+}
+
+function renderTasks(tasks, showProject) {
+  return `<section class="task-list" aria-label="Задачи и обещания">${tasks.map(task => `<div class="task">
+      <div class="row-head">
         <strong>${esc(task.title)}</strong>
-        ${allCalls && taskDeals.length > 1 ? `<p class="small muted">${esc(task.deal_title)}</p>` : ""}
-        <p class="small"><span data-state="${task.status === "done" ? "completed" : ""}">${taskLabels[task.status]}</span>
-        <span class="muted"> · ${actors[task.side]}${task.due ? " · до " + esc(date(task.due)) : ""}</span></p>
+        <span class="tag status-chip" data-tone="${task.status === "done" ? "success" : task.status === "open" ? "attention" : "neutral"}">${taskLabels[task.status]}</span>
+      </div>
+      ${showProject ? `<p class="small muted">${esc(task.deal_title)}</p>` : ""}
+      <p class="small muted">${actors[task.side]}${task.due ? " · до " + esc(date(task.due)) : ""}</p>
+      ${task.call_id || task.result ? `<details>
+        <summary class="small">${task.result ? "Итог и источник" : "Источник обещания"}</summary>
         ${task.result ? `<p class="small muted">${esc(task.result)}</p>` : ""}
         ${task.call_id ? sourceButton(task.call_id, "Показать обещание", task.line_id) :
           `<p class="small muted">${esc(entity(data.sources || [], task.source_id)?.name || "Импорт JSON")}</p>`}
-        </div>`).join("") ||
-        '<p class="empty">Зафиксированных задач пока нет.</p>'}</div>
-    </section>`;
+      </details>` : ""}</div>`).join("") || '<p class="empty">Задач пока нет.</p>'}</section>`;
+}
+
+function renderHistory(calls) {
+  const withText = calls.filter(call => call.lines.length).length;
+  return `<section class="call-list" aria-label="История общения">
+    ${calls.length ? `<p class="small muted history-coverage">Текст доступен для ${withText} из ${calls.length} событий</p>` : ""}
+    ${calls.map(renderCall).join("") || '<p class="empty">Событий пока нет.</p>'}</section>`;
 }
 
 function renderNext(item, deal) {
   const call = entity(data.calls, item.call_id);
   const labels = {...suggestionLabels, ...actionLabels, pending: "Ждём срока", resolved: "Шаг закрыт"};
   const facts = item.kind === "invite"
-    ? item.state === "verify" ? "Срок отправки прошёл. Проверьте, было ли отправлено приглашение."
-      : item.state === "action" ? "Срок отправки прошёл. В загруженной истории подтверждения нет."
-      : item.state === "pending" ? "Срок отправки ещё не наступил." : ""
-    : item.state === "action" ? "В разговоре остался вопрос, с которым можно вернуться к клиенту." : "";
+    ? item.state === "verify" ? "Проверьте отправку приглашения."
+      : item.state === "action" ? "Срок прошёл, подтверждения отправки нет."
+      : ""
+    : "";
   const quotes = call.lines.filter(line => item.source_ids.includes(line.id));
   const priority = item.state === "verify" ? "В очереди проверок" :
     item.fresh && item.due ? "Свежий звонок с просроченным обещанием" :
@@ -306,21 +317,29 @@ function renderNext(item, deal) {
   const allowed = preview
     ? item.call_id === "alpha-2" ? item.allowed.filter(kind => kind === previewPath[snapshotIndex]) : []
     : item.allowed;
-  return `<section class="priority" data-state="${esc(item.state)}" aria-labelledby="next-heading">
-    <h3 id="next-heading">${labels[item.state]}</h3><p><strong>${esc(item.angle)}</strong></p>
-    ${facts ? `<p>${facts}</p>` : ""}
-    ${item.due ? `<p class="small muted">Обещанный срок · ${esc(date(item.due))}</p>` : ""}
-    ${["action", "verify"].includes(item.state) ? `<p class="small muted">${priority} · ${esc(finance(deal))}</p>` : ""}
+  const tone = item.state === "verify" || item.state === "pending" ? "attention" :
+    ["meeting_held", "invited"].includes(item.state) ? "success" : "info";
+  return `<section class="priority" data-tone="${tone}" aria-labelledby="next-heading">
+    <span class="tag status-chip">${labels[item.state]}</span>
+    <h3 id="next-heading">${esc(item.angle)}</h3>
+    ${facts ? `<p class="priority-reason">${facts}</p>` : ""}
+    ${item.due && item.state === "pending" ? `<p class="small muted">До ${esc(date(item.due))}</p>` : ""}
     ${canEdit() && allowed.length ? renderRecord(item.call_id, allowed) : ""}
-    <blockquote class="evidence">${renderLines(quotes)}</blockquote>
-    ${sourceButton(call.id, "Открыть текст целиком")}
-    ${item.state === "action" ? `<details class="draft"><summary>Черновик для контакта</summary>
+    <div class="priority-details">
+    <details class="draft">
+      <summary>Почему этот шаг</summary>
+      ${item.due ? `<p class="small muted">Обещанный срок · ${esc(date(item.due))}</p>` : ""}
+      ${["action", "verify"].includes(item.state) ? `<p class="small muted">${priority} · ${esc(finance(deal))}</p>` : ""}
+      <blockquote class="evidence">${renderLines(quotes)}</blockquote>
+      ${sourceButton(call.id, "Открыть текст целиком")}
+    </details>
+    ${item.state === "action" ? `<details class="draft"><summary>Черновик сообщения</summary>
       <p>${esc(item.kind === "invite"
         ? "Добрый день! Возвращаюсь к договорённости по проекту «" + deal.title +
           "». Предлагаю следующую повестку: " + item.angle + ". Когда вам удобно созвониться?"
         : "Добрый день! Возвращаюсь к обсуждению проекта «" + deal.title +
           "». Можно коротко созвониться, чтобы обсудить вопрос, который остался открытым?")}</p></details>` : ""}
-    </section>`;
+    </div></section>`;
 }
 
 function renderRecord(callId, allowed) {
@@ -349,10 +368,11 @@ function renderCall(call) {
   const source = entity(data.sources || [], call.source_id);
   const channel = channels[call.channel || "call"];
   const content = call.channel === "message" || call.channel === "email" ? "Текст сообщения" : "Расшифровка";
+  const result = call.analysis?.result;
   return `<article class="call-card">
-    <p><span class="call-result">${esc(call.title || channel)}</span> · ${esc(date(call.at))}</p>
+    <div class="row-head"><strong>${esc(call.title || channel)}</strong><span class="small muted numeric">${esc(date(call.at))}</span></div>
     <p class="small muted">${esc(source?.name || "Импорт JSON")} · ${esc(deal?.title || "Без привязки к сделке")}</p>
-    <p class="small muted">${callResults[call.analysis?.result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</p>
+    <span class="tag status-chip" data-tone="${result === "advanced" ? "success" : ["blocked", "no_step"].includes(result) ? "attention" : "neutral"}">${callResults[result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</span>
     ${call.analysis ? `<p class="call-summary">${esc(call.analysis.summary)}</p>` : ""}
     ${call.lines.length ? `<details id="call-${esc(call.id)}">
       <summary class="small">${!preview && canEdit() && !call.analysis ? content + " и разбор" : content}</summary>
@@ -394,22 +414,26 @@ function minskInput(value) {
 
 function renderResults() {
   const counts = [
-    [data.deals.filter(deal => deal.result === "won").length, "Выиграно"],
-    [data.deals.filter(deal => deal.actions.some(action => action.kind === "invited")).length, "Сделок с отправленным приглашением"],
-    [data.deals.filter(deal => deal.actions.some(action => action.kind === "meeting_held")).length, "Сделок с отмеченной встречей"]
+    [data.deals.filter(deal => deal.result === "won").length, "Выиграно сделок", "success"],
+    [data.deals.filter(deal => deal.actions.some(action => action.kind === "invited")).length, "Отправили приглашение", "info"],
+    [data.deals.filter(deal => deal.actions.some(action => action.kind === "meeting_held")).length, "Провели встречу", "neutral"]
   ];
-  $("results").innerHTML = `<div class="metrics">${counts.map(([count, label]) =>
-    `<div class="metric"><strong>${count}</strong><span class="muted">${label}</span></div>`).join("")}</div>
-    <h2>Исход и этап сделки</h2>
+  $("results").innerHTML = `<div class="metrics">${counts.map(([count, label, tone]) =>
+    `<div class="metric" data-tone="${tone}"><strong class="numeric">${count}</strong><span class="muted">${label}</span></div>`).join("")}</div>
+    <h2>Сделки</h2>
     ${data.deals.map(deal => `<div class="report-row">
       <div><button type="button" class="source-link" data-report-deal="${esc(deal.id)}">${esc(deal.title)}</button>
       <p class="small muted">${esc(entity(data.clients, deal.client_id).name)} · ${esc(stages[deal.stage])}</p></div>
-      <div><strong>${dealResults[deal.result]}</strong>${deal.actions.length ?
+      <div><span class="tag status-chip" data-tone="${deal.result === "won" ? "success" : "neutral"}">${dealResults[deal.result]}</span>${deal.actions.length ?
         `<p class="small muted">${actionLabels[deal.actions.at(-1).kind]}</p>` : ""}</div>
       </div>`).join("") || '<p class="empty">Сделок пока нет.</p>'}`;
 }
 
 function openCall(id, lineId) {
+  if (dossierPane !== "history") {
+    dossierPane = "history";
+    renderDossier();
+  }
   let call = $("call-" + id);
   if (!call) {
     allCalls = true;
@@ -456,14 +480,17 @@ $("detail").addEventListener("click", event => {
   } else if (button.dataset.project) {
     dealId = button.dataset.project;
     focusedCall = undefined;
+    allCalls = false;
     renderDossier();
     $("detail").querySelector('.project[aria-pressed="true"]').focus();
+  } else if (button.dataset.pane) {
+    dossierPane = button.dataset.pane;
+    renderDossier();
+    $("detail").querySelector('.dossier-nav [aria-pressed="true"]').focus();
   } else if (button.dataset.scope) {
     allCalls = button.dataset.scope === "client";
-    const fromCalls = Boolean(button.closest("#call-heading + .filters"));
     renderDossier();
-    const group = fromCalls ? "#call-heading" : "#task-heading";
-    $("detail").querySelector(group + ' + .filters [aria-pressed="true"]').focus();
+    $("detail").querySelector('.scope [aria-pressed="true"]').focus();
   } else if (button.dataset.source) {
     openCall(button.dataset.source, button.dataset.line);
   } else if (button.hasAttribute("data-load-demo")) {
@@ -490,6 +517,14 @@ $("detail").addEventListener("click", event => {
 });
 
 $("detail").addEventListener("change", event => {
+  if (event.target.id === "project-select") {
+    dealId = event.target.value;
+    focusedCall = undefined;
+    allCalls = false;
+    renderDossier();
+    $("project-select").focus();
+    return;
+  }
   if (event.target.name !== "opportunity") return;
   const form = event.target.form;
   form.querySelector("[data-opportunity]").hidden = !event.target.value;

@@ -1,44 +1,150 @@
-.sidebar nav button { text-align: start; align-items: center; font-size: .9rem; }
-#queue-count:not(:empty) { color: var(--blue); font-variant-numeric: tabular-nums; }
-.pipeline { grid-template-columns: minmax(16rem, .65fr) minmax(0, 1.35fr); }
-.pipeline .detail { overflow-wrap: anywhere; }
-#list-tools { margin-bottom: .9rem; }
-#list-tools input { width: 100%; margin-top: .35rem; }
+:root {
+  --space-1: .35rem;
+  --space-2: .65rem;
+  --space-3: 1rem;
+  --space-4: 1.4rem;
+  --space-5: 2rem;
+}
+.skip-link {
+  position: absolute; z-index: 4; inset: .6rem auto auto .6rem;
+  padding: .7rem 1rem; background: var(--primary); color: var(--primary-text);
+  border-radius: .5rem; transform: translateY(-160%);
+}
+.skip-link:focus { transform: none; }
+.numeric { font-variant-numeric: tabular-nums; }
+[data-tone="attention"] { --tone: var(--warm); }
+[data-tone="success"] { --tone: var(--green); }
+[data-tone="info"] { --tone: var(--blue); }
+[data-tone="neutral"] { --tone: var(--muted); }
+.status-chip {
+  color: var(--tone, var(--muted));
+  background: color-mix(in oklab, var(--tone, var(--muted)) 13%, var(--panel));
+  border-radius: .4rem;
+  padding: .16rem .5rem;
+  font-weight: 600;
+}
+.sidebar nav button { text-align: start; align-items: center; font-size: .9rem; padding-inline: .55rem; }
+#queue-count:not(:empty) {
+  min-width: 1.35rem; padding: .1rem .26rem; border-radius: .35rem;
+  text-align: center; color: var(--blue); background: var(--bg); font-variant-numeric: tabular-nums;
+}
+.heading { padding-block: 1.1rem; background: #16223a; }
+.heading-actions, .preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.heading-actions:has(> :not([hidden])) { min-width: 0; }
+.heading-actions:not(:has(> :not([hidden]))) { display: none; }
+.demo-label { color: var(--cyan); background: #1d344b; padding: .25rem .55rem; border-radius: .38rem; font-size: .8rem; }
+.preview-bar button { font-size: .8rem; min-height: 2.2rem; }
+.pipeline { grid-template-columns: minmax(15rem, .58fr) minmax(0, 1.42fr); }
+.pipeline .queue { padding: var(--space-3); }
+.pipeline .detail { overflow-wrap: anywhere; padding-block: var(--space-4) var(--space-5); }
+.pipeline .detail > * + * { margin-top: var(--space-3); }
+#list-tools { margin-bottom: var(--space-3); }
+#list-tools input { width: 100%; margin-top: var(--space-1); }
+.pipeline .deal { padding: .68rem .8rem; }
+.pipeline .deal[data-state="action"] { --state-color: var(--blue); }
 .pipeline .deal strong { font-size: .98rem; }
-.pipeline .deal .row-meta { margin-top: .35rem; }
-.pipeline .deal .statusline { margin-top: .5rem; }
-.client-deals { display: grid; gap: .45rem; }
+.pipeline .deal .row-meta { margin-top: var(--space-1); }
+.pipeline .deal .statusline { margin-top: .48rem; font-variant-numeric: tabular-nums; }
+.client-header h2 { font-size: clamp(1.3rem, 1rem + 1cqi, 1.65rem); }
+.client-deals { display: grid; gap: var(--space-1); }
 .project {
-  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
-  gap: .35rem 1rem; background: var(--panel); border-color: var(--border);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--space-1) var(--space-3); background: var(--panel); border-color: var(--border);
   text-align: start; overflow-wrap: anywhere;
 }
-.project[aria-pressed="true"] { background: #203655; border-color: #587da9; }
-.dossier-section { padding-block-start: .95rem; border-top: 1px solid var(--border); }
-.dossier-section h3, .priority h3 { margin-bottom: .55rem; }
-.dossier-section .muted, .priority .muted { line-height: 1.45; }
-.deal-facts { display: flex; flex-wrap: wrap; column-gap: 1.4rem; row-gap: .4rem; margin: .65rem 0; }
+.project[aria-pressed="true"] {
+  background: var(--selected); border-color: var(--control); box-shadow: inset .2rem 0 var(--blue);
+}
+.project > :first-child { flex: 1 1 12rem; min-width: 0; }
+.project-stage { display: block; }
+.mobile-project { display: none; }
+.dossier-nav, .scope { display: flex; flex-wrap: wrap; gap: .22rem; align-items: center; }
+.dossier-nav { border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+.dossier-nav button, .scope button {
+  background: transparent; border-color: transparent; color: var(--muted); min-height: 2.55rem; padding: .35rem .64rem;
+}
+.dossier-nav button:hover, .scope button:hover { background: var(--panel); color: var(--text); }
+.dossier-nav button[aria-pressed="true"], .scope button[aria-pressed="true"] {
+  color: var(--text); background: var(--selected); box-shadow: inset 0 -2px var(--blue);
+}
+.scope button { font-size: .86rem; }
+.item-count { margin-inline-start: .2rem; color: var(--blue); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.dossier-block, .task, .call-card {
+  padding: .7rem .85rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--panel);
+}
+.dossier-block > summary { font-weight: 650; min-height: 1.6rem; }
+.dossier-block > :not(summary) { margin-top: .65rem; }
+.dossier-block > p { max-width: 68ch; }
+.deal-facts { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: .45rem; margin: .65rem 0; }
 .deal-facts dt { color: var(--muted); font-size: .79rem; }
 .deal-facts dd { margin: 0; }
-.priority { padding: .85rem 1rem; background: #201f25; border: 1px solid #5b4b3e; border-inline-start: 3px solid var(--warm); border-radius: .45rem; }
-.priority > * + *, .editor > .actions { margin-top: .65rem; }
-.priority[data-state="contacted"], .priority[data-state="invited"] { background: var(--panel); border-color: var(--border); border-inline-start-color: var(--blue); }
-.client-header h2, .deal-header h3 { font-size: 1.22rem; }
-.source-link { min-height: 2rem; padding: .15rem 0; border: 0; color: var(--blue); background: transparent; text-align: start; text-decoration: underline; text-underline-offset: .18em; }
-.source-link:hover { background: transparent; color: #c4dcff; }
-.task-list, .call-list { display: grid; gap: .45rem; }
-.task, .call-card { padding: .65rem .8rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--panel); }
-.task p + p { margin-top: .2rem; }
-.task span[data-state="completed"] { color: var(--green); }
-.call-card summary, .draft summary { min-height: 2rem; color: var(--blue); }
-.call-result { font-weight: 600; }
+.priority {
+  padding: clamp(.85rem, 2.8cqi, 1.25rem);
+  background: color-mix(in oklab, var(--tone) 12%, var(--panel));
+  border: 1px solid var(--border); border-inline-start: 3px solid var(--tone); border-radius: .75rem;
+}
+.priority > * + * { margin-top: var(--space-2); }
+.priority h3 { font-size: clamp(1.1rem, 1rem + .6cqi, 1.35rem); max-width: 55ch; }
+.priority-reason { color: var(--muted); }
+.priority-details {
+  display: flex; align-items: start; flex-wrap: wrap; gap: .45rem 1.2rem;
+  padding-top: .45rem; border-top: 1px solid var(--border);
+}
+.priority-details details[open] { flex-basis: 100%; }
+.priority-details details > :not(summary) { margin-top: .45rem; }
+.priority-details p { max-width: 68ch; }
+.draft summary, .task summary, .call-card summary { min-height: 1.7rem; color: var(--blue); }
+.source-link {
+  min-height: 2rem; padding: .15rem 0; border: 0; color: var(--blue);
+  background: transparent; text-align: start; text-decoration: underline; text-underline-offset: .18em;
+}
+.source-link:hover { background: transparent; color: var(--text); }
+.task-list, .call-list { display: grid; gap: .55rem; }
+.row-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .22rem .7rem; }
+.task p + p, .task details, .call-card .tag { margin-top: .25rem; }
 .call-summary, .call-card details { margin-top: .35rem; }
-.call-card .editor { margin-top: .85rem; }
-.dossier-section .filters { margin-bottom: .6rem; }
+.call-summary { max-width: 70ch; }
+.call-card .editor, .editor > .actions { margin-top: .65rem; }
 .report .source-link { font-weight: 600; }
-.preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: .55rem 1rem; padding: .65rem 1rem; background: var(--surface); color: var(--muted); font-size: .86rem; }
+#results .metric {
+  min-width: 0; padding: .65rem .72rem; border: 1px solid var(--border); border-top: 3px solid var(--tone);
+  border-radius: .55rem; background: var(--panel); overflow-wrap: anywhere;
+}
+#results .metric strong { color: var(--tone); }
+#results .metrics { margin-bottom: var(--space-4); }
+#results .report-row { align-items: center; }
 .notice:empty { border: 0; padding: 0; box-shadow: none; }
-.pipeline .record-form { margin-block: .6rem .25rem; }
+.record-form summary {
+  display: list-item; width: fit-content; min-height: 2.6rem;
+  padding: .5rem .7rem; border-radius: .5rem; background: var(--primary);
+  color: var(--primary-text); font-weight: 650;
+}
+.record-form summary:hover { background: #b8cfff; }
+.record-form .editor { margin-top: var(--space-2); }
 .record-form textarea { min-height: 4rem; }
-#title:focus, .client-header h2:focus { outline: none; }
-@media (max-width: 31rem) { .pipeline .deal { padding: .7rem .75rem; } }
+#title:focus-visible, #main:focus-visible, .client-header h2:focus-visible {
+  outline: 2px solid var(--blue); outline-offset: .2rem;
+}
+@media (max-width: 54rem) {
+  .shell:has(.pipeline) .sidebar { gap: .45rem; }
+  .shell:has(.pipeline) .sidebar nav { gap: .2rem; }
+}
+@media (max-width: 31rem) {
+  .heading { padding-block: .75rem; }
+  .dossier-nav button { padding-inline: .52rem; }
+}
+@container (max-width: 42rem) {
+  .pipeline .detail { padding-block-start: .65rem; }
+  .client-header .back { padding-inline: 0; min-height: 2.2rem; margin-bottom: .3rem; }
+  .pipeline .client-deals { display: none; }
+  .mobile-project { display: grid; gap: .25rem; }
+  .mobile-project label { color: var(--muted); }
+}
+@media (max-width: 42rem) {
+  #main[data-open="true"]:has(#inbox:not([hidden])) > .heading { display: none; }
+}
+@media (forced-colors: active) {
+  .status-chip, .demo-label { border: 1px solid CanvasText; }
+  .dossier-nav button[aria-pressed="true"], .scope button[aria-pressed="true"] { border-color: Highlight; }
+  .priority { border-inline-start-color: Highlight; }
+}

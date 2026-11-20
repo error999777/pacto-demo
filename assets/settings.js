@@ -2,20 +2,20 @@
 
 const sourceTypes = {
   crm: {name: "CRM", mark: "CRM", title: "CRM и сделки", presets: ["Битрикс24", "amoCRM", "Самописная CRM"],
-    receives: "Клиенты, сделки, этапы, суммы и задачи.",
+    receives: "Сделки, этапы и задачи",
     detail: "Выгрузите карточки и дела из CRM. Дайте каждому клиенту и сделке постоянный ID.",
     docs: ["Документация Битрикс24", "https://apidocs.bitrix24.com/tutorials/crm/how-to-get-lists/index.html"]},
   phone: {name: "Телефония", mark: "ТФ", title: "Телефония", presets: ["АТС / SIP", "Mango Office", "Asterisk"],
-    receives: "Завершённые звонки, время и расшифровки.",
+    receives: "Звонки и расшифровки",
     detail: "Передавайте завершённые звонки из АТС. Если есть только запись, подготовьте расшифровку перед отправкой."},
   meeting: {name: "Видеовстречи", mark: "ВК", title: "Видеовстречи", presets: ["Google Meet", "Zoom", "Другой сервис"],
-    receives: "Факт встречи и расшифровка, если она доступна.",
+    receives: "Встречи и расшифровки",
     detail: "Адаптер получает сведения о встрече и доступную расшифровку через API сервиса. Доступ зависит от разрешений организатора и настроек записи."},
   chat: {name: "Мессенджеры", mark: "ЧТ", title: "Мессенджеры", presets: ["Telegram", "WhatsApp Business", "Другой мессенджер"],
-    receives: "Сообщения из разрешённых рабочих чатов.",
+    receives: "Сообщения из рабочих чатов",
     detail: "Адаптер отправляет сообщения из чатов, к которым ему предоставлен доступ. Объём истории зависит от канала и его разрешений."},
   mail: {name: "Почта", mark: "@", title: "Рабочая почта", presets: ["Gmail", "Outlook", "Корпоративная почта"],
-    receives: "Письма и цепочки, связанные со сделкой.",
+    receives: "Письма по сделкам",
     detail: "Передавайте сообщения из подключённого рабочего ящика. Сопоставляйте переписку по контакту и ID сделки в CRM."}
 };
 let sourceFilter = "all";
@@ -24,7 +24,7 @@ let setupCategory = "crm";
 function renderSettings() {
   const sources = data.sources || [];
   const imported = data.calls.filter(call => !call.source_id).length;
-  const explainOpen = $("join-details")?.open ?? matchMedia("(min-width: 51rem)").matches;
+  const explainOpen = $("join-details")?.open ?? false;
   const providerLinks = {
     meeting: [["Google Meet: записи и расшифровки", "https://developers.google.com/workspace/meet/api/guides/artifacts"],
       ["Zoom: записи встреч", "https://developers.zoom.us/docs/api/meetings/#tag/Cloud-Recording"]],
@@ -33,63 +33,59 @@ function renderSettings() {
   $("settings").innerHTML = `
     <section aria-labelledby="sources-heading" class="settings-section">
       <div class="settings-heading">
-        <div><h2 id="sources-heading">Источники данных</h2>
-          <p class="muted">Отсюда Pacto собирает историю и проверяет следующий шаг.</p></div>
+        <h2 id="sources-heading">Приём данных</h2>
         ${!preview ? `<div class="actions">
           ${sources.length ? '<button type="button" id="settings-refresh">Обновить статус</button>' : ""}
           ${canEdit() ? '<button type="button" id="settings-import">Импортировать JSON</button>' : ""}
         </div>` : ""}
       </div>
-      <div class="source-grid">
-        <section class="connections" aria-label="Состояние источников">
-          <h3>Приём данных</h3>
-          ${sources.length ? sources.map(source => renderConnection(source)).join("") :
-            '<p class="muted">Источники через API пока не настроены.</p>'}
+        <div class="connections">
           <div class="connection-row">
             <span class="source-symbol" aria-hidden="true">↓</span>
-            <div><strong>Ручной импорт JSON</strong><p class="muted small">${imported ? "Событий в истории: " + imported : "Событий пока нет"}</p></div>
+            <div><strong>Импорт JSON</strong><p class="muted small">${imported ? "Событий: " + imported : "Событий пока нет"}</p></div>
           </div>
-        </section>
-        <details id="join-details" class="joining"${explainOpen ? " open" : ""}>
-          <summary>Как собирается досье</summary>
-          <ol>
-            <li><strong>CRM задаёт основу.</strong> Клиент, сделка, этап, ответственный и задачи.</li>
-            <li><strong>Общение добавляет факты.</strong> Звонки, письма, чаты и встречи попадают в историю по ID клиента и сделки.</li>
-            <li><strong>Контекст определяет вывод.</strong> Без текста виден факт общения. Если подтверждающий канал недоступен, шаг требует проверки.</li>
-          </ol>
-        </details>
-      </div>
+          ${sources.length ? sources.map(renderConnection).join("") :
+            '<p class="small muted connection-empty">Источники API ещё не настроены</p>'}
+        </div>
     </section>
     <section aria-labelledby="catalog-heading" class="settings-section">
-      <div class="settings-heading"><div><h2 id="catalog-heading">Каталог источников</h2>
-        <p class="muted">Для передачи данных нужен адаптер к API Pacto или выгрузка JSON.</p></div></div>
+      <div class="settings-heading"><h2 id="catalog-heading">Добавить источник</h2></div>
       <div class="filters settings-filters" aria-label="Категории источников">
         ${[["all", "Все"], ...Object.entries(sourceTypes).map(([id, type]) => [id, type.name])].map(([id, name]) =>
           `<button type="button" data-source-filter="${id}" aria-pressed="${id === sourceFilter}">${name}</button>`).join("")}
       </div>
       <div class="catalog-grid">${Object.entries(sourceTypes).filter(([id]) => sourceFilter === "all" || id === sourceFilter)
-        .map(([id, type]) => `<article class="source-card">
+        .map(([id, type]) => `<article class="source-card" data-category="${id}">
           <div class="source-card-title"><span class="source-symbol" aria-hidden="true">${type.mark}</span><h3>${type.title}</h3></div>
-          <p>${type.receives}</p>
+          <p class="source-receives">${type.receives}</p>
           <p class="muted small">${type.presets.join(" · ")}</p>
           <div class="actions"><button type="button" data-source-type="${id}">${!preview && canEdit() ? "Настроить приём" : "Как подключить"}</button></div>
-          <details><summary class="small">Какие данные доступны</summary>
+          <details><summary class="small">Подробности</summary>
             <p class="muted small">${type.detail}</p>
             ${[...(type.docs ? [type.docs] : []), ...(providerLinks[id] || [])].map(([label, url]) =>
               `<a class="small" href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`).join("")}
           </details>
         </article>`).join("")}</div>
-    </section>`;
+    </section>
+    <details id="join-details" class="joining"${explainOpen ? " open" : ""}>
+      <summary>Как собирается досье</summary>
+      <ul>
+        <li><strong>CRM</strong> передаёт сделку, этап и задачи.</li>
+        <li><strong>Каналы общения</strong> дополняют историю по ID клиента или сделки.</li>
+        <li><strong>Текст</strong> нужен для разбора. Без него в досье виден только факт общения.</li>
+      </ul>
+    </details>`;
 }
 
 function renderConnection(source) {
   const status = !source.enabled ? "Приём приостановлен" : source.last_batch_at ? "Данные получены" : "Ожидает первый пакет";
-  return `<div class="connection-row">
+  const tone = !source.enabled ? "neutral" : source.last_batch_at ? "success" : "attention";
+  return `<div class="connection-row" data-category="${source.category}">
     <span aria-hidden="true" class="source-symbol">${sourceTypes[source.category].mark}</span>
     <div><strong>${esc(source.name)}</strong>
-      <p class="small ${source.enabled && source.last_batch_at ? "healthy" : "muted"}">${status}</p>
       ${source.last_batch_at ? `<p class="small muted">${esc(date(source.last_batch_at))} · записей: ${source.last_batch_count}</p>` : ""}
-    </div>${canEdit() ? `<div class="connection-actions actions">
+    </div><span class="tag status-chip" data-tone="${tone}">${status}</span>
+    ${canEdit() ? `<div class="connection-actions actions">
       <button type="button" data-source-toggle="${esc(source.id)}" data-enable="${!source.enabled}">${source.enabled ? "Приостановить" : "Возобновить"}</button>
       <button type="button" data-source-rotate="${esc(source.id)}">Новый ключ</button>
     </div>` : ""}
@@ -102,8 +98,9 @@ function showSourceSetup(category) {
   $("source-title").textContent = type.title;
   $("source-description").textContent = type.detail;
   $("source-scope").textContent = type.receives;
-  $("source-mode").textContent = preview ? "В демо можно посмотреть порядок настройки. Ключ выдаёт локальная версия Pacto." :
-    "Pacto выдаст адрес и ключ. Укажите их в своём адаптере, который преобразует данные в JSON.";
+  $("source-mode").textContent = preview ? "Ключ для адаптера выдаёт локальная версия Pacto." :
+    "Укажите адрес и ключ Pacto в адаптере сервиса.";
+  $("source-description").closest("details").open = false;
   $("source-form").hidden = preview || !canEdit();
   $("source-presets").innerHTML = type.presets.map(name =>
     `<button type="button" data-preset="${name}">${name}</button>`).join("");

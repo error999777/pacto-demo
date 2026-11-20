@@ -5,10 +5,7 @@
 }
 .settings-section + .settings-section { margin-top: 1.8rem; }
 .settings-heading { display: flex; justify-content: space-between; align-items: start; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
-.settings-heading p { margin-top: .25rem; }
-.source-grid, .catalog-grid { display: grid; gap: .75rem; }
-.source-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); align-items: start; }
-.catalog-grid { grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); }
+.catalog-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(min(16.5rem, 100%), 1fr)); }
 .connections, .joining, .source-card {
   min-width: 0;
   padding: 1rem;
@@ -17,30 +14,34 @@
   border-radius: .6rem;
   overflow-wrap: anywhere;
 }
-.connections > p, .joining ol { margin-top: .55rem; }
-.joining { border-inline-start: 3px solid var(--blue); }
+.joining { margin-top: var(--space-4); }
 .joining summary { font-weight: 600; min-height: 1.6rem; }
-.joining ol { margin-bottom: 0; padding-inline-start: 1.2rem; color: var(--muted); }
+.joining ul { margin-block: .55rem 0; padding-inline-start: 1.2rem; color: var(--muted); }
 .joining li + li { margin-top: .45rem; }
 .joining strong { color: var(--text); }
-.connection-row { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-top: .65rem; padding-top: .65rem; border-top: 1px solid var(--border); }
-.connection-row .healthy { color: var(--green); }
+.connection-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .7rem; }
+.connections > * + * { margin-top: .65rem; padding-top: .65rem; border-top: 1px solid var(--border); }
+[data-category="phone"] { --source-accent: var(--cyan); }
+[data-category="meeting"] { --source-accent: var(--lilac); }
+[data-category="chat"] { --source-accent: var(--green); }
+[data-category="mail"] { --source-accent: var(--warm); }
 .source-symbol {
   display: grid;
   place-items: center;
   flex: 0 0 2.35rem;
   inline-size: 2.35rem;
   block-size: 2.35rem;
-  border: 1px solid #385177;
+  border: 1px solid var(--border);
   border-radius: .55rem;
-  background: #203655;
-  color: #c4dcff;
+  background: color-mix(in oklab, var(--source-accent, var(--blue)) 16%, var(--panel));
+  color: var(--source-accent, var(--blue));
   font-size: .8rem;
   font-weight: 700;
 }
 .connection-actions { margin-inline-start: auto; }
 .connection-actions button { font-size: .84rem; }
 .source-card { display: flex; flex-direction: column; gap: .6rem; }
+.source-receives { font-size: .94rem; }
 .source-card-title { display: flex; align-items: center; gap: .6rem; }
 .source-card > .actions { margin-top: auto; }
 .source-card details { border-top: 1px solid var(--border); padding-top: .45rem; }
@@ -52,8 +53,11 @@
 .settings-dialog { width: min(calc(100% - 1.5rem), 35rem); overflow-wrap: anywhere; }
 .settings-dialog :is(input:not([type=hidden]), button) { min-height: 3rem; }
 .settings-dialog p:empty { display: none; }
+.settings-dialog .dialog-help { margin-top: .65rem; }
 .dialog-close { margin-block-start: .65rem; }
 .credential-field { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .35rem; }
 .credential-field input { flex: 1 1 11rem; margin: 0; }
-.history-coverage { margin-block-end: .55rem; }
-@container (max-width: 46rem) { .source-grid { grid-template-columns: minmax(0, 1fr); } }
+.history-coverage { margin-block-end: .1rem; }
+@container (min-width: 54rem) {
+  .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

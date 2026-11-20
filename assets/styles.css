@@ -1,16 +1,21 @@
 :root {
   color-scheme: dark;
-  --bg: #10151e;
-  --panel: #161d28;
-  --surface: #1d2736;
-  --border: #334156;
-  --text: #edf3fc;
-  --muted: #acb9cf;
-  --blue: #8ebaff;
-  --primary: #2663c7;
-  --warm: #f3c586;
-  --green: #86dfb8;
-  font: 16px/1.5 "Segoe UI", Arial, sans-serif;
+  --bg: #121c30;
+  --panel: #1b2941;
+  --surface: #23334e;
+  --border: #3a4d6c;
+  --control: #7188ad;
+  --text: #f3f7ff;
+  --muted: #b8c7e0;
+  --blue: #a6c2ff;
+  --primary: #8eb3ff;
+  --primary-text: #102446;
+  --warm: #ffce8c;
+  --green: #82ebc3;
+  --cyan: #8bdef6;
+  --lilac: #d0bafe;
+  --selected: #294575;
+  font: 16px/1.45 "Segoe UI", system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
 }
@@ -18,17 +23,18 @@
 body { margin: 0; }
 [hidden] { display: none !important; }
 h1, h2, h3, p, blockquote { margin: 0; }
-h1 { font-size: 1.65rem; line-height: 1.2; letter-spacing: -.035em; }
+h1 { font-size: clamp(1.48rem, 1.2rem + 1vw, 2rem); line-height: 1.16; letter-spacing: -.032em; }
 h2 { font-size: 1.22rem; line-height: 1.3; }
 h3 { font-size: 1.05rem; }
+h1, h2, h3 { text-wrap: balance; }
 button, input, select, textarea { font: inherit; color: inherit; }
-button, input, select, textarea { border: 1px solid #536985; border-radius: .45rem; }
+button, input, select, textarea { border: 1px solid var(--control); border-radius: .5rem; }
 button, input, select { min-height: 2.65rem; }
-button { padding: .48rem .8rem; cursor: pointer; background: #222f41; }
-button:hover { background: #2b3b51; }
+button { padding: .48rem .8rem; cursor: pointer; background: var(--surface); }
+button:hover { background: var(--selected); }
 button:disabled { cursor: wait; opacity: .65; }
-button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-button.primary:hover { background: #2d6ad3; }
+button.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); font-weight: 650; }
+button.primary:hover { background: #b8cfff; }
 button.quiet { background: transparent; border-color: transparent; color: var(--muted); }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 2px solid var(--blue); outline-offset: 2px;
@@ -44,15 +50,15 @@ textarea { width: 100%; resize: vertical; min-height: 6rem; field-sizing: conten
 .login form { display: grid; gap: .65rem; }
 .login p { margin-top: 1rem; }
 .brand { display: flex; gap: .65rem; align-items: center; font-size: 1.65rem; font-weight: 650; letter-spacing: -.055em; }
-.brand span { display: grid; place-items: center; color: white; background: var(--primary); width: 1.95rem; height: 2rem; border-radius: .6rem .6rem .6rem .2rem; padding-bottom: .15rem; }
+.brand span { display: grid; place-items: center; color: var(--primary-text); background: var(--primary); width: 1.95rem; height: 2rem; border-radius: .6rem .6rem .6rem .2rem; padding-bottom: .15rem; }
 .shell { display: grid; grid-template-columns: 12rem minmax(0,1fr); min-height: 100dvh; }
 .sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 1.55rem .85rem 1rem; display: flex; flex-direction: column; gap: 1.65rem; min-width: 0; }
 .sidebar .brand, .office { padding-left: .5rem; }
 .office span { display: block; }
 .sidebar nav { display: grid; gap: .35rem; }
 .sidebar nav button { display: flex; justify-content: space-between; gap: .35rem; border-color: transparent; background: transparent; }
-.sidebar nav button[aria-current="page"] { background: #203655; color: #c4dcff; }
-.sidebar nav button:hover { background: #253349; }
+.sidebar nav button[aria-current="page"] { background: var(--selected); color: var(--text); }
+.sidebar nav button:hover { background: var(--surface); }
 .account { margin-top: auto; border-top: 1px solid var(--border); padding: .7rem .5rem 0; font-size: .88rem; }
 .account button { display: block; padding-left: 0; }
 .main { min-width: 0; container-type: inline-size; }
@@ -63,10 +69,10 @@ textarea { width: 100%; resize: vertical; min-height: 6rem; field-sizing: conten
 .filters, .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .filters { margin-bottom: 1rem; }
 .filters button { padding-inline: .55rem; font-size: .82rem; border-color: transparent; background: transparent; }
-.filters button[aria-pressed="true"] { background: #283951; }
+.filters button[aria-pressed="true"] { background: var(--selected); }
 .list { display: grid; gap: .55rem; }
 .deal { text-align: left; width: 100%; padding: .85rem .9rem; border: 1px solid var(--border); border-left: 3px solid var(--state-color,var(--muted)); background: var(--panel); overflow-wrap: anywhere; }
-.deal[aria-pressed="true"] { background: #1b2d46; border-top-color: #587da9; border-right-color: #587da9; border-bottom-color: #587da9; }
+.deal[aria-pressed="true"] { background: var(--selected); border-top-color: var(--control); border-right-color: var(--control); border-bottom-color: var(--control); }
 .deal span, .deal strong { display: block; }
 .deal .statusline { display: flex; align-items: baseline; flex-wrap: wrap; gap: .45rem .7rem; margin-top: .65rem; }
 .tag { display: inline-block; padding: .12rem .42rem; border-radius: .25rem; background: color-mix(in srgb, var(--state-color,var(--muted)) 12%, var(--panel)); color: var(--state-color,var(--muted)); font-size: .75rem; }
@@ -94,7 +100,7 @@ details { overflow-wrap: anywhere; }
 .report-row { padding: .8rem 0; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; }
 .report h2 { margin-bottom: .65rem; }
 .empty { padding: .65rem 0; color: var(--muted); }
-dialog { width: min(calc(100% - 2rem), 32rem); max-height: 85dvh; border: 1px solid var(--border); border-radius: .65rem; padding: 1.4rem; background: var(--surface); color: var(--text); }
+dialog { width: min(calc(100% - 2rem), 32rem); max-height: 85dvh; overscroll-behavior: contain; border: 1px solid var(--control); border-radius: .8rem; padding: 1.4rem; background: var(--surface); color: var(--text); }
 dialog::backdrop { background: #05090db9; }
 dialog p, dialog label, dialog .actions { margin-top: .85rem; }
 dialog input { width: 100%; margin-top: .35rem; }

@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121c30">
   <title>Pacto — клиенты и сделки</title>
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/pipeline.css">
@@ -12,22 +13,22 @@
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
-    <div class="brand"><span aria-hidden="true">p</span>pacto</div>
+    <div class="brand" translate="no"><span aria-hidden="true">p</span>pacto</div>
     <h1 id="login-title">Вход в Pacto</h1>
     <form id="login-form">
       <label for="access-code">Личный код</label>
-      <input type="password" id="access-code" autocomplete="current-password" required maxlength="64">
+      <input type="password" id="access-code" name="code" autocomplete="current-password" required maxlength="64" spellcheck="false">
       <button class="primary" type="submit">Войти</button>
     </form>
     <p class="muted small">Для демо: <code>demo-manager</code> или <code>demo-lead</code>.</p>
   </section>
   <div class="shell" id="workspace" hidden>
+    <a class="skip-link" href="#main">Перейти к содержимому</a>
     <aside class="sidebar">
-      <div class="brand"><span aria-hidden="true">p</span>pacto</div>
-      <p class="office">Проектные продажи <span class="muted small">Заказная ИТ-разработка</span></p>
+      <div class="brand" translate="no"><span aria-hidden="true">p</span>pacto</div>
       <nav id="nav" aria-label="Разделы">
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
-        <button type="button" data-view="clients">Все клиенты</button>
+        <button type="button" data-view="clients">Клиенты</button>
         <button type="button" data-view="results">Результаты</button>
         <button type="button" data-view="settings">Настройки</button>
       </nav>
@@ -36,20 +37,22 @@
         <button type="button" class="quiet" id="logout">Выйти</button>
       </footer>
     </aside>
-    <main class="main" id="main">
+    <main class="main" id="main" tabindex="-1">
       <header class="heading">
-        <div><h1 id="title" tabindex="-1"></h1><p class="muted" id="subtitle"></p></div>
-        <button type="button" id="open-import" hidden>Загрузить данные</button>
+        <h1 id="title" tabindex="-1"></h1>
+        <div class="heading-actions">
+          <div class="preview-bar" id="preview-bar" hidden>
+            <span class="demo-label">Демо · вымышленные данные</span>
+            <button type="button" id="reset-preview" hidden>Начать заново</button>
+          </div>
+          <button type="button" id="open-import" hidden>Загрузить данные</button>
+        </div>
       </header>
-      <div class="preview-bar" id="preview-bar" hidden>
-        <p id="preview-note"></p>
-        <button type="button" id="reset-preview" hidden>Начать заново</button>
-      </div>
       <div class="split pipeline" id="inbox">
         <section class="queue" aria-label="Список">
           <div id="list-tools">
             <label for="search">Поиск по клиенту или сделке</label>
-            <input id="search" type="search" placeholder="Например, Альфа">
+            <input id="search" name="search" type="search" autocomplete="off" placeholder="Например, Альфа…">
           </div>
           <div id="items" class="list"></div>
         </section>
@@ -61,7 +64,7 @@
   </div>
   <dialog id="import-dialog" aria-labelledby="import-title">
     <h2 id="import-title">Загрузить данные</h2>
-    <p class="muted">Выберите JSON с синтетическими клиентами, сделками, звонками и задачами или загрузите готовый пример.</p>
+    <p class="muted">Загрузите синтетические данные в JSON.</p>
     <form id="import-form">
       <label for="import-file">Файл JSON</label>
       <input id="import-file" type="file" accept=".json,application/json" required>
@@ -75,12 +78,13 @@
   </dialog>
   <dialog id="source-dialog" aria-labelledby="source-title" class="settings-dialog">
     <h2 id="source-title">Настроить источник</h2>
-    <p id="source-scope"></p><p id="source-description" class="muted small"></p>
+    <p id="source-scope"></p>
     <p id="source-mode" class="muted small"></p>
+    <details class="dialog-help"><summary class="small">Что нужно от сервиса</summary><p id="source-description" class="muted small"></p></details>
     <form id="source-form" method="post" action="/api/pipeline/sources" aria-labelledby="source-title">
       <div id="source-presets" class="actions" aria-label="Примеры названий"></div>
-      <label for="source-name">Название источника (обязательно)</label>
-      <input id="source-name" name="name" maxlength="160" required aria-describedby="source-error">
+      <label for="source-name">Название источника</label>
+      <input id="source-name" name="name" maxlength="160" required autocomplete="off" aria-describedby="source-error">
       <p id="source-error" role="status" class="muted small"></p>
       <div class="actions"><button class="primary" type="submit">Создать ключ приёма</button></div>
     </form>

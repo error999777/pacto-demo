@@ -19,6 +19,7 @@ const actors = {client: "Клиент", manager: "Менеджер", unknown: "�
 const previewPath = ["contacted", "invited", "meeting_held"];
 let snapshots = [];
 let snapshotIndex = 0;
+let demoRole = "manager";
 let data;
 let view = entrance();
 let customerId;
@@ -42,6 +43,7 @@ const date = value => value ? dateFormat.format(new Date(value)) : "";
 const money = value => numberFormat.format(value) + " BYN";
 const entity = (items, id) => items.find(item => item.id === id);
 const canEdit = () => data.role === "manager";
+const canManageTeam = () => data.role === "lead";
 const clientDeals = id => data.deals.filter(deal => deal.client_id === id);
 const clientCalls = id => data.calls.filter(call => call.client_id === id);
 
@@ -91,18 +93,25 @@ function showLogin() {
   $("access-code").focus();
 }
 
+function demoSnapshot() {
+  return {...snapshots[snapshotIndex], role: demoRole,
+    name: demoRole === "lead" ? "Анна Соколова" : "Мария Волкова",
+    member_id: demoRole === "lead" ? "local-lead" : "local-manager"};
+}
+
 async function refresh() {
-  data = preview ? snapshots[snapshotIndex] : await api("/api/pipeline");
+  data = preview ? demoSnapshot() : await api("/api/pipeline");
   $("login").hidden = true;
   $("workspace").hidden = false;
   $("logout").hidden = preview;
-  $("actor").textContent = preview ? "Демо · менеджер" : data.name;
+  $("actor").textContent = data.name;
   $("preview-bar").hidden = !preview;
   $("reset-preview").hidden = snapshotIndex === 0;
   render();
 }
 
 function setView(next) {
+  if (next === "team" && !canManageTeam()) return;
   view = next;
   customerId = dealId = focusedCall = undefined;
   allCalls = true;
@@ -132,6 +141,8 @@ function finance(deal) {
 }
 
 function render() {
+  if (view === "team" && !canManageTeam()) view = "queue";
+  $("nav").querySelector('[data-view="team"]').hidden = !canManageTeam();
   const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Аналитика", team: "Команда", settings: "Настройки"};
   $("title").textContent = labels[view];
   for (const button of $("nav").querySelectorAll("[data-view]")) {
@@ -638,10 +649,16 @@ $("import-form").addEventListener("submit", event => {
 });
 $("reset-preview").addEventListener("click", () => {
   snapshotIndex = 0;
-  data = snapshots[0];
+  data = demoSnapshot();
   $("reset-preview").hidden = true;
   setView("queue");
   notify("Демо возвращено к началу.");
+});
+$("demo-role").addEventListener("change", event => {
+  if (!preview) return;
+  demoRole = event.target.value;
+  if (demoRole === "lead" && entrance() === "team") view = "team";
+  run(null, refresh);
 });
 
 async function start() {

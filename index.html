@@ -34,7 +34,7 @@
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
         <button type="button" data-view="clients">Клиенты</button>
         <button type="button" data-view="results">Аналитика</button>
-        <button type="button" data-view="team">Команда</button>
+        <button type="button" data-view="team" hidden>Команда</button>
         <button type="button" data-view="settings">Настройки</button>
       </nav>
       <footer class="account">
@@ -48,6 +48,12 @@
         <div class="heading-actions">
           <div class="preview-bar" id="preview-bar" hidden>
             <span class="demo-label">Демо · вымышленные данные</span>
+            <label class="demo-role" for="demo-role">Роль в демо
+              <select id="demo-role" name="demo_role">
+                <option value="manager">Мария Волкова · менеджер</option>
+                <option value="lead">Анна Соколова · руководитель</option>
+              </select>
+            </label>
             <button type="button" id="reset-preview" hidden>Начать заново</button>
           </div>
           <button type="button" id="open-import" hidden>Загрузить данные</button>

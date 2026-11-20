@@ -34,6 +34,8 @@
 .heading-actions:not(:has(> :not([hidden]))) { display: none; }
 .demo-label { color: var(--cyan); background: #1d344b; padding: .25rem .55rem; border-radius: .38rem; font-size: .8rem; }
 .preview-bar button { font-size: .8rem; min-height: 2.2rem; }
+.demo-role { display: flex; flex-wrap: wrap; align-items: center; gap: .28rem .5rem; font-size: .8rem; color: var(--muted); }
+.demo-role select { font-size: .85rem; min-height: 2.15rem; padding: .3rem .4rem; }
 .pipeline { grid-template-columns: minmax(15rem, .58fr) minmax(0, 1.42fr); }
 .pipeline .queue { padding: var(--space-3); }
 .pipeline .detail { overflow-wrap: anywhere; padding-block: var(--space-4) var(--space-5); }

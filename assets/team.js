@@ -25,7 +25,6 @@ const demoTeam = [
 ];
 
 const teamRows = () => preview ? demoTeam : data.team;
-const canManageTeam = () => preview || data.role === "lead";
 
 function statusMatches(member, filter) {
   if (filter === "all") return true;

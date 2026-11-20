@@ -26,7 +26,6 @@ let dealId;
 let focusedCall;
 let allCalls = true;
 let dossierPane = "overview";
-let suggestionDraft;
 let noticeTimer;
 
 function esc(value) {
@@ -80,7 +79,7 @@ async function run(button, work, target) {
 
 function showLogin() {
   data = undefined;
-  customerId = dealId = focusedCall = suggestionDraft = undefined;
+  customerId = dealId = focusedCall = undefined;
   view = entrance();
   dossierPane = "overview";
   $("search").value = "";
@@ -104,7 +103,7 @@ async function refresh() {
 
 function setView(next) {
   view = next;
-  customerId = dealId = focusedCall = suggestionDraft = undefined;
+  customerId = dealId = focusedCall = undefined;
   allCalls = true;
   dossierPane = "overview";
   $("main").dataset.open = "false";
@@ -118,7 +117,6 @@ function select(client, deal, call) {
   focusedCall = call;
   allCalls = view === "clients";
   dossierPane = "overview";
-  suggestionDraft = undefined;
   $("main").dataset.open = "true";
   render();
   const heading = $("client-heading");
@@ -358,6 +356,10 @@ function renderRecord(callId, allowed) {
   return `<details class="record-form"><summary>Зафиксировать результат</summary>
     <form class="editor" data-outcome="${esc(callId)}">
       <label>Результат<select name="kind">${allowed.map(kind => `<option value="${kind}">${actionLabels[kind]}</option>`).join("")}</select></label>
+      <label data-action-date ${allowed[0] === "invited" ? "" : "hidden"}>Когда отправили (по Минску)
+        <input name="occurred_at" type="datetime-local" aria-describedby="action-date-hint">
+        <small class="muted" id="action-date-hint">Укажите фактическое время, если оно известно.</small>
+      </label>
       <label>Что произошло<textarea name="note" rows="2" maxlength="1000" required></textarea></label>
       <div class="actions"><button type="submit" class="primary">Сохранить результат</button></div>
     </form></details>`;
@@ -374,27 +376,30 @@ function renderCall(call) {
   const channel = channels[call.channel || "call"];
   const content = call.channel === "message" || call.channel === "email" ? "Текст сообщения" : "Расшифровка";
   const result = call.analysis?.result;
+  const review = entity(data.analysis_reviews || [], call.id);
+  const draft = entity(data.analysis_drafts || [], call.id);
+  const editable = !preview && canEdit() && !call.analysis && !review;
+  const decision = review?.decision === "rejected" ? "Черновик отклонён" : draft ? "Ждёт подтверждения" : null;
   return `<article class="call-card">
     <div class="row-head"><strong>${esc(call.title || channel)}</strong><span class="small muted numeric">${esc(date(call.at))}</span></div>
     <p class="small muted">${esc(source?.name || "Импорт JSON")} · ${esc(deal?.title || "Без привязки к сделке")}</p>
-    <span class="tag status-chip" data-tone="${result === "advanced" ? "success" : ["blocked", "no_step"].includes(result) ? "attention" : "neutral"}">${callResults[result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</span>
+    <span class="tag status-chip" data-tone="${result === "advanced" ? "success" : draft || ["blocked", "no_step"].includes(result) ? "attention" : "neutral"}">${decision || callResults[result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</span>
     ${call.analysis ? `<p class="call-summary">${esc(call.analysis.summary)}</p>` : ""}
     ${call.lines.length ? `<details id="call-${esc(call.id)}">
-      <summary class="small">${!preview && canEdit() && !call.analysis ? content + " и разбор" : content}</summary>
+      <summary class="small">${editable ? content + " и разбор" : content}</summary>
       <blockquote class="evidence">${renderLines(call.lines)}</blockquote>
-      ${!preview && canEdit() && !call.analysis ? renderAnalysisForm(call) : ""}
+      ${editable ? renderAnalysisForm(call, draft?.analysis) : ""}
     </details>` : ""}</article>`;
 }
 
-function renderAnalysisForm(call) {
-  const draft = suggestionDraft?.id === call.id ? suggestionDraft.analysis : undefined;
+function renderAnalysisForm(call, draft) {
   const options = (values, selected) => values.map(([key, label]) =>
     `<option value="${esc(key)}"${selected === key ? " selected" : ""}>${esc(label)}</option>`).join("");
   const lines = side => [["", "Выберите реплику"], ...call.lines.filter(line => line.speaker === side)
     .map(line => [line.id, line.text])];
   const opportunity = draft?.opportunity;
-  return `<form class="editor" data-analysis="${esc(call.id)}">
-    ${data.ai_available ? '<div><button type="button" data-suggest>Предложить разбор с DeepSeek</button></div>' : ""}
+  return `<form class="editor" data-analysis="${esc(call.id)}" aria-label="Проверка разбора">
+    ${data.ai_available && !draft ? '<div><button type="button" data-suggest>Предложить разбор с DeepSeek</button></div>' : ""}
     <label>Итог разговора<textarea name="summary" rows="2" maxlength="1000" required>${esc(draft?.summary)}</textarea></label>
     <label>Результат<select name="result">${options(Object.entries(callResults), draft?.result || "no_step")}</select></label>
     <label>Следующий шаг<select name="opportunity">${options([["", "Без предложения"], ["invite", "Отправить приглашение"],
@@ -404,10 +409,22 @@ function renderAnalysisForm(call) {
       <label>Реплика клиента<select name="client_line">${options(lines("client"), opportunity?.client_line)}</select></label>
       <div class="editor" data-invite ${opportunity?.kind === "invite" ? "" : "hidden"}>
         <label>Реплика менеджера<select name="manager_line">${options(lines("manager"), opportunity?.manager_line)}</select></label>
-        <label>Срок отправки по Минску<input name="due" type="datetime-local" value="${esc(minskInput(opportunity?.due))}"></label>
+        <label>Срок отправки по Минску<input name="due" type="datetime-local" value="${esc(minskInput(opportunity?.due))}"
+          data-original="${esc(opportunity?.due)}"></label>
       </div>
     </div>
-    <div><button type="submit">Сохранить разбор</button></div></form>`;
+    <details class="dossier-block">
+      <summary>Качество разговора</summary>
+      <label class="quality-toggle"><input type="checkbox" name="quality" ${draft?.quality ? "checked" : ""}> Учитывать в оценке</label>
+      <div class="editor" data-quality ${draft?.quality ? "" : "hidden"}>
+        <label>Уточнённая потребность<select name="need_line">${options(lines("client"), draft?.quality?.need_line)}</select></label>
+        <label>Обсуждённый срок<select name="deadline_line">${options([["", "Выберите реплику"], ...call.lines
+          .filter(line => line.speaker !== "unknown").map(line => [line.id, line.text])], draft?.quality?.deadline_line)}</select></label>
+      </div>
+    </details>
+    <div class="actions"><button class="primary" type="submit">${draft ? "Подтвердить разбор" : "Сохранить разбор"}</button></div>
+    ${draft ? '<details><summary class="small">Отклонить черновик</summary><p class="small muted">Разбор не попадёт в работу.</p><button type="button" data-reject-analysis>Отклонить</button></details>' : ""}
+    </form>`;
 }
 
 function minskInput(value) {
@@ -495,23 +512,38 @@ $("detail").addEventListener("click", event => {
   } else if (button.hasAttribute("data-suggest")) {
     const id = button.closest("form").dataset.analysis;
     run(button, async () => {
-      const analysis = await api(`/api/pipeline/calls/${id}/suggest?revision=${data.revision}`, {});
-      if (!button.isConnected) return;
-      suggestionDraft = {id, analysis};
-      renderDossier();
-      openCall(id);
+      await api(`/api/pipeline/calls/${id}/suggest?revision=${data.revision}`, {});
+      const stayed = button.isConnected;
+      await refresh();
+      if (stayed) openCall(id);
       notify("Проверьте итог и цитаты перед сохранением.");
+    });
+  } else if (button.hasAttribute("data-reject-analysis")) {
+    const id = button.closest("form").dataset.analysis;
+    run(button, async () => {
+      await api(`/api/pipeline/calls/${id}/reject-analysis`, {revision: data.revision});
+      await refresh();
+      openCall(id);
+      notify("Черновик отклонён.");
     });
   }
 });
 
 $("detail").addEventListener("change", event => {
+  if (event.target.form?.dataset.outcome && event.target.name === "kind") {
+    event.target.form.querySelector("[data-action-date]").hidden = event.target.value !== "invited";
+    return;
+  }
   if (event.target.id === "project-select") {
     dealId = event.target.value;
     focusedCall = undefined;
     allCalls = false;
     renderDossier();
     $("project-select").focus();
+    return;
+  }
+  if (event.target.name === "quality") {
+    event.target.form.querySelector("[data-quality]").hidden = !event.target.checked;
     return;
   }
   if (event.target.name !== "opportunity") return;
@@ -528,8 +560,10 @@ $("detail").addEventListener("submit", event => {
     const id = form.dataset.outcome;
     const deal = entity(data.deals, dealId);
     const kind = values.get("kind");
+    const occurred = kind === "invited" && values.get("occurred_at");
     run(event.submitter, async () => {
-      await api(`/api/pipeline/calls/${id}/outcome`, {revision: data.revision, kind, note: values.get("note")});
+      await api(`/api/pipeline/calls/${id}/outcome`, {revision: data.revision, kind, note: values.get("note"),
+        occurred_at: occurred ? occurred + ":00+03:00" : null});
       await refresh();
       showSaved(deal, id, actionLabels[kind] + ".");
     });
@@ -540,12 +574,15 @@ $("detail").addEventListener("submit", event => {
     if (kind === "invite") {
       opportunity.manager_line = values.get("manager_line");
       const due = values.get("due");
-      opportunity.due = due ? due + ":00+03:00" : null;
+      const original = form.elements.due.dataset.original;
+      opportunity.due = due ? (original && due === minskInput(original) ? original : due + ":00+03:00") : null;
     }
+    const quality = values.has("quality") ? {
+      need_line: values.get("need_line") || null, deadline_line: values.get("deadline_line") || null
+    } : null;
     run(event.submitter, async () => {
       await api(`/api/pipeline/calls/${id}/analysis`, {revision: data.revision,
-        analysis: {summary: values.get("summary"), result: values.get("result"), opportunity}});
-      suggestionDraft = undefined;
+        analysis: {summary: values.get("summary"), result: values.get("result"), opportunity, quality}});
       await refresh();
       openCall(id);
       notify("Разбор сохранён.");

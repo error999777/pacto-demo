@@ -105,6 +105,8 @@
 .call-summary, .call-card details { margin-top: .35rem; }
 .call-summary { max-width: 70ch; }
 .call-card .editor, .editor > .actions { margin-top: .65rem; }
+.editor .quality-toggle { display: flex; align-items: center; gap: .5rem; }
+.quality-toggle input { min-height: auto; accent-color: var(--primary); }
 .report .source-link { font-weight: 600; }
 #results .metric {
   min-width: 0; padding: .65rem .72rem; border: 1px solid var(--border); border-top: 3px solid var(--tone);

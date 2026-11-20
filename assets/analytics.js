@@ -13,8 +13,30 @@ const percent = value => value == null ? "—" : analyticsPercent.format(value);
 const minutes = value => value == null ? "—" : number(value) + " мин";
 const currency = value => value == null ? "—" : money(value);
 const tally = (rows, test) => rows.filter(test).length;
+const auditFieldLabels = {
+  summary: "Итог разговора", result: "Результат", opportunity: "Следующий шаг",
+  "opportunity.kind": "Тип шага", "opportunity.angle": "Предложение",
+  "opportunity.client_line": "Реплика клиента", "opportunity.manager_line": "Реплика менеджера",
+  "opportunity.due": "Срок", quality: "Оценка разговора",
+  "quality.need_line": "Доказательство потребности", "quality.deadline_line": "Доказательство срока"
+};
 
-function summarizeAnalytics(deals, calls, queue, now) {
+function summarizeAnalytics(deals, calls, queue, now, activity) {
+  const callIds = new Set(calls.map(call => call.id));
+  const drafts = (activity.analysis_drafts || []).filter(draft => callIds.has(draft.id));
+  const reviews = (activity.analysis_reviews || []).filter(review => callIds.has(review.id));
+  const attempts = (activity.analysis_attempts || []).filter(attempt => callIds.has(attempt.call_id));
+  const rejected = reviews.filter(review => review.decision === "rejected");
+  const rejectedIds = new Set(rejected.map(review => review.id));
+  const confirmed = reviews.filter(review => review.decision === "confirmed");
+  const acceptedModel = confirmed.filter(review => review.from_model);
+  const unchanged = tally(acceptedModel, review => !review.fields.length);
+  const candidates = drafts.length + tally(reviews, review => review.from_model);
+  const edits = new Map();
+  for (const review of reviews) for (const field of review.fields) edits.set(field, (edits.get(field) || 0) + 1);
+  const successful = attempts.filter(attempt => attempt.success);
+  const processing = latency(successful.map(attempt => attempt.duration_ms));
+  const recording = latency(successful.map(attempt => attempt.recording_ms).filter(value => value != null));
   const actions = deals.flatMap(deal => deal.actions);
   const tasks = deals.flatMap(deal => deal.tasks.map(task => ({...task, deal})));
   const promises = tasks.filter(task => task.call_id);
@@ -23,6 +45,14 @@ function summarizeAnalytics(deals, calls, queue, now) {
   const overdue = open.filter(task => task.due && Date.parse(task.due) < now);
   const timed = done.filter(task => task.due && task.completed_at);
   const onTime = tally(timed, task => Date.parse(task.completed_at) <= Date.parse(task.due));
+  const reviewedInvites = reviews.filter(review => review.opportunity_kind === "invite");
+  const invites = reviewedInvites.length + tally(drafts, draft => draft.analysis.opportunity?.kind === "invite");
+  const closedLoop = tally(reviewedInvites, review => {
+    const opportunity = entity(calls, review.id)?.analysis?.opportunity;
+    return review.decision === "confirmed" && opportunity?.kind === "invite" &&
+      timed.some(task => task.call_id === review.id && task.line_id === opportunity.manager_line &&
+        task.side === "manager" && Date.parse(task.completed_at) <= Date.parse(task.due));
+  });
   const started = tasks.filter(task => task.assigned_at && task.started_at);
   const meanStart = started.length ? started.reduce((sum, task) =>
     sum + (Date.parse(task.started_at) - Date.parse(task.assigned_at)) / 60_000, 0) / started.length : null;
@@ -30,10 +60,18 @@ function summarizeAnalytics(deals, calls, queue, now) {
   const won = deals.filter(deal => deal.result === "won");
   const wonWithAmount = won.filter(deal => deal.amount != null);
   const analyzed = calls.filter(call => call.analysis);
+  const quality = analyzed.filter(call => call.analysis.quality);
   const meetings = tally(calls, call => call.channel === "meeting");
   return {
     deals, calls, actions, tasks, promises, overdue, won, closed, meetings, analyzed, done, open,
-    pendingReview: tally(calls, call => call.lines.length && !call.analysis),
+    pendingReview: tally(calls, call => call.lines.length && !call.analysis && !rejectedIds.has(call.id)),
+    review: {
+      drafts, reviews, confirmed, rejected, acceptedModel, unchanged, candidates, edits,
+      overdueDrafts: tally(drafts, draft => draft.analysis.opportunity?.due &&
+        Date.parse(draft.analysis.opportunity.due) < now),
+      invites, closedLoop, processing, recording, failed: attempts.length - successful.length,
+      systemEvents: attempts.length
+    },
     countCalls: tally(calls, call => (call.channel || "call") === "call"),
     inProgress: tally(tasks, task => task.status === "in_progress"),
     notStarted: tally(tasks, task => task.status === "open"),
@@ -51,7 +89,27 @@ function summarizeAnalytics(deals, calls, queue, now) {
     held: tally(deals, deal => deal.actions.some(action => action.kind === "meeting_held")),
     signalCount: queue.length,
     nextStepShare: proportion(tally(analyzed, call => call.analysis.result === "agreed"), analyzed.length),
+    qualityCount: quality.length,
+    needShare: proportion(tally(quality, call => call.analysis.quality.need_line), quality.length),
+    deadlineShare: proportion(tally(quality, call => call.analysis.quality.deadline_line), quality.length)
   };
+}
+
+function latency(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  const median = !sorted.length ? null : sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+  return {count: sorted.length, median, max: sorted.at(-1)};
+}
+
+function duration(milliseconds) {
+  if (milliseconds == null) return "—";
+  if (milliseconds < 1000) return number(milliseconds) + " мс";
+  return milliseconds < 60_000 ? number(milliseconds / 1000) + " с" : minutes(milliseconds / 60_000);
+}
+
+function latencyNote(sample, empty) {
+  return sample.count ? `Замеров: ${sample.count} · максимум: ${duration(sample.max)}` : empty;
 }
 
 function activityDays(calls, actions, days, now) {
@@ -172,11 +230,13 @@ function metricRows(rows) {
 }
 
 function metricsCatalog(m) {
+  const r = m.review;
+  const editCount = [...r.edits.values()].reduce((sum, count) => sum + count, 0);
   return [
     ["Распознано обязательств", number(m.promises.length), "Задачи с цитатой"],
-    ["Подтверждено человеком", "—", "Нет журнала подтверждений"],
-    ["Обязательства ждут проверки", "—", "Нет учёта черновиков"],
-    ["Отклонено", "—", "Нет журнала отказов от разбора"],
+    ["Подтверждено человеком", number(r.confirmed.length), `Из черновиков модели: ${r.acceptedModel.length}`],
+    ["Черновики ждут проверки", number(r.drafts.length)],
+    ["Отклонено", number(r.rejected.length), "Решения менеджера по черновикам"],
     ["Сторона определена", number(m.promises.length), "Менеджер или клиент"],
     ["Создано задач", number(m.tasks.length)],
     ["Задачи не начаты", number(m.notStarted)],
@@ -191,16 +251,19 @@ function metricsCatalog(m) {
     ["Выполнено без времени закрытия", number(m.withoutCompletionTime)],
     ["Доля закрытых в срок", percent(m.onTimeShare), `Замеров: ${number(m.timed)}`],
     ["Обязательства с истёкшим сроком", number(m.overdue.length)],
-    ["Черновики среди просроченных", "—", "Нет учёта черновиков"],
-    ["Доля подтверждённых", "—", "Нет журнала подтверждений"],
-    ["Доля отклонённых", "—", "Нет журнала отказов"],
-    ["Доля замкнутого контура", "—", "Нет всех событий подтверждения и исполнения"],
-    ["Подтверждено без правок", "—", "Нет журнала правок"],
-    ["Звонки в один клик", "—", "Нет журнала проверки звонков"],
-    ["Ручные правки по полям", "—", "Нет журнала правок"],
-    ["Текст → карточка", "—", "Нет замеров медианы и максимума"],
-    ["Запись → карточка", "—", "Нет замеров медианы и максимума"],
-    ["Авторство событий", "—", "Нет журнала авторства"],
+    ["Черновики с истёкшим сроком", number(r.overdueDrafts)],
+    ["Доля подтверждённых", percent(proportion(r.acceptedModel.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
+    ["Доля отклонённых", percent(proportion(r.rejected.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
+    ["Доля замкнутого контура", percent(proportion(r.closedLoop, r.invites)), `${r.closedLoop} подтверждено и выполнено вовремя из ${r.invites} приглашений в журнале`],
+    ["Подтверждено без правок", percent(proportion(r.unchanged, r.acceptedModel.length)), `Из ${r.acceptedModel.length} подтверждённых черновиков модели`],
+    ["Разборы в один клик", percent(proportion(r.unchanged, r.candidates)), "Из всех черновиков модели"],
+    ["Ручные правки по полям", number(editCount)],
+    ...[...r.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", number(count)]),
+    ["Текст → карточка", duration(r.processing.median), latencyNote(r.processing, "Нет успешных запусков модели")],
+    ["Запись → карточка", duration(r.recording.median), latencyNote(r.recording, "Источник ещё не передал время приёма записи")],
+    ["Ошибки обработки", number(r.failed)],
+    ["События с автором", number(r.reviews.length), "Подтверждения и отклонения"],
+    ["События системы", number(r.systemEvents), "Запуски модели"]
   ];
 }
 
@@ -213,8 +276,8 @@ function salesMetrics(m) {
     ["Начало работы над задачей", minutes(m.meanStart), `Среднее от назначения до старта · замеров: ${m.accepted}`],
     ["Отправили приглашение", number(m.invited)], ["Провели встречу по сигналу", number(m.held)],
     ["Согласован следующий шаг", percent(m.nextStepShare), `Разобрано событий: ${m.analyzed.length}`],
-    ["Уточнена потребность клиента", "—", "Нужна разметка разговоров"],
-    ["Проговорён срок", "—", "Нужна разметка разговоров"],
+    ["Уточнена потребность клиента", percent(m.needShare), `Оценено разговоров: ${m.qualityCount}`],
+    ["Проговорён срок", percent(m.deadlineShare), `Оценено разговоров: ${m.qualityCount}`],
   ];
 }
 
@@ -276,7 +339,7 @@ function analyticsScope() {
   const calls = person ? data.calls.filter(call => dealIds.has(call.deal_id)) : data.calls;
   const queue = data.queue.filter(item => dealIds.has(item.deal_id));
   const now = new Date(data.generated_at || Date.now());
-  return {people, person, now, m: summarizeAnalytics(deals, calls, queue, now)};
+  return {people, person, now, m: summarizeAnalytics(deals, calls, queue, now, data)};
 }
 
 function renderResults() {
@@ -312,7 +375,7 @@ function renderResults() {
       <h2 id="overview-metrics">Обещания и сроки</h2>
       <div class="analytics-kpis">
         ${keyMetric("Просрочено", number(overdue), "Открытые задачи", "attention", "analytics-attention")}
-        ${keyMetric("Ждут разбора", number(m.pendingReview), "События с текстом", "info")}
+        ${keyMetric("Ждут проверки", number(m.review.drafts.length), `Без черновика: ${m.pendingReview - m.review.drafts.length}`, "info")}
         ${keyMetric("В работе", number(m.inProgress), `Не начаты: ${number(m.notStarted)}`, "neutral")}
         ${keyMetric("Выполнено", number(m.done.length), `В CRM: ${number(m.crmDone)}`, "success")}
         ${keyMetric("Выполнено в срок", percent(m.onTimeShare), m.timed ? `${m.onTime} из ${m.timed} с замером` : "Нет замеров", "success")}
@@ -332,6 +395,18 @@ function renderResults() {
       ${card("Нагрузка по сотрудникам", workloadRows(person ? [person] : people, data, now))}
       ${card("Источники общения", barRows(sourceRows(m.calls), "Полученные события по каналам") +
         (m.calls.length ? '<details class="analytics-fold"><summary class="small">По подключённым источникам</summary>' + sourceDetails(m.calls) + '</details>' : ""))}
+    </div>
+    <div class="analytics-equal-grid analytics-entry">
+      ${card("Проверка разборов", metricRows([
+        ["Подтверждено", number(m.review.confirmed.length)], ["Отклонено", number(m.review.rejected.length)],
+        ["Подтверждено без правок", percent(proportion(m.review.unchanged, m.review.acceptedModel.length))],
+      ]) + (m.review.edits.size ? '<details class="analytics-fold"><summary>Что исправляли</summary>' +
+        barRows([...m.review.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", count, "purple"]), "Изменённые поля") + '</details>' : ""))}
+      ${card("Скорость обработки", metricRows([
+        ["Текст → карточка", duration(m.review.processing.median), latencyNote(m.review.processing, "Нет успешных запусков модели")],
+        ["Запись → карточка", duration(m.review.recording.median), latencyNote(m.review.recording, "Нет времени приёма записи от источника")],
+        ["Ошибки", number(m.review.failed)]
+      ]))}
     </div>
     <section class="analytics-card analytics-entry" id="analytics-attention" aria-labelledby="attention-title">
       <div class="analytics-card-head"><h2 id="attention-title">Требуют внимания</h2>

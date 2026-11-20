@@ -9,9 +9,11 @@
   <link rel="stylesheet" href="assets/pipeline.css">
   <link rel="stylesheet" href="assets/settings.css">
   <link rel="stylesheet" href="assets/analytics.css">
+  <link rel="stylesheet" href="assets/team.css">
   <script defer src="assets/pipeline.js"></script>
   <script defer src="assets/settings.js"></script>
   <script defer src="assets/analytics.js"></script>
+  <script defer src="assets/team.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -32,6 +34,7 @@
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
         <button type="button" data-view="clients">Клиенты</button>
         <button type="button" data-view="results">Аналитика</button>
+        <button type="button" data-view="team">Команда</button>
         <button type="button" data-view="settings">Настройки</button>
       </nav>
       <footer class="account">
@@ -61,6 +64,7 @@
         <section class="detail" id="detail" aria-label="Досье клиента"></section>
       </div>
       <section class="analytics" id="results" aria-label="Аналитика сделок" hidden></section>
+      <section class="team" id="team" aria-label="Сотрудники" hidden></section>
       <div id="settings" class="settings" hidden></div>
     </main>
   </div>
@@ -121,5 +125,9 @@
     </form>
   </dialog>
   <p id="notice" class="notice" role="status"></p>
+  <dialog class="team-dialog" id="team-dialog" aria-labelledby="team-dialog-title">
+    <div id="team-dialog-body"></div>
+    <p id="team-dialog-message" role="status" class="small muted"></p>
+  </dialog>
 </body>
 </html>

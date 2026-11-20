@@ -34,6 +34,7 @@ function esc(value) {
 }
 function entrance() {
   if (location.hash === "#settings") return "settings";
+  if (location.hash === "#team") return "team";
   if (["#analytics", "#analytics-attention"].includes(location.hash)) return "results";
   return "queue";
 }
@@ -131,17 +132,22 @@ function finance(deal) {
 }
 
 function render() {
-  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Аналитика", settings: "Настройки"};
+  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Аналитика", team: "Команда", settings: "Настройки"};
   $("title").textContent = labels[view];
   for (const button of $("nav").querySelectorAll("[data-view]")) {
     if (button.dataset.view === view) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   }
   $("queue-count").textContent = data.queue.length || "";
-  $("open-import").hidden = preview || !canEdit() || view === "settings";
-  $("inbox").hidden = view === "results" || view === "settings";
+  $("open-import").hidden = preview || !canEdit() || view === "settings" || view === "team";
+  $("inbox").hidden = !["queue", "clients"].includes(view);
   $("results").hidden = view !== "results";
   $("settings").hidden = view !== "settings";
+  $("team").hidden = view !== "team";
+  if (view === "team") {
+    renderTeam();
+    return;
+  }
   if (view === "settings") {
     renderSettings();
     return;
@@ -385,6 +391,7 @@ function renderCall(call) {
     <p class="small muted">${esc(source?.name || "Импорт JSON")} · ${esc(deal?.title || "Без привязки к сделке")}</p>
     <span class="tag status-chip" data-tone="${result === "advanced" ? "success" : draft || ["blocked", "no_step"].includes(result) ? "attention" : "neutral"}">${decision || callResults[result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</span>
     ${call.analysis ? `<p class="call-summary">${esc(call.analysis.summary)}</p>` : ""}
+    ${review ? `<p class="small muted">Проверил(а) ${esc(review.author)}</p>` : ""}
     ${call.lines.length ? `<details id="call-${esc(call.id)}">
       <summary class="small">${editable ? content + " и разбор" : content}</summary>
       <blockquote class="evidence">${renderLines(call.lines)}</blockquote>

@@ -6,7 +6,9 @@
   <title>Pacto — клиенты и сделки</title>
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/pipeline.css">
+  <link rel="stylesheet" href="assets/settings.css">
   <script defer src="assets/pipeline.js"></script>
+  <script defer src="assets/settings.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -27,6 +29,7 @@
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
         <button type="button" data-view="clients">Все клиенты</button>
         <button type="button" data-view="results">Результаты</button>
+        <button type="button" data-view="settings">Настройки</button>
       </nav>
       <footer class="account">
         <span id="actor"></span>
@@ -39,7 +42,7 @@
         <button type="button" id="open-import" hidden>Загрузить данные</button>
       </header>
       <div class="preview-bar" id="preview-bar" hidden>
-        <p>Демо на вымышленных сделках. Можно пройти сценарий технической встречи.</p>
+        <p id="preview-note"></p>
         <button type="button" id="reset-preview" hidden>Начать заново</button>
       </div>
       <div class="split pipeline" id="inbox">
@@ -53,6 +56,7 @@
         <section class="detail" id="detail" aria-label="Досье клиента"></section>
       </div>
       <section class="report" id="results" aria-label="Результаты сделок" hidden></section>
+      <div id="settings" class="settings" hidden></div>
     </main>
   </div>
   <dialog id="import-dialog" aria-labelledby="import-title">
@@ -68,6 +72,47 @@
       </div>
     </form>
     <p id="import-notice" class="muted small" role="status"></p>
+  </dialog>
+  <dialog id="source-dialog" aria-labelledby="source-title" class="settings-dialog">
+    <h2 id="source-title">Настроить источник</h2>
+    <p id="source-scope"></p><p id="source-description" class="muted small"></p>
+    <p id="source-mode" class="muted small"></p>
+    <form id="source-form" method="post" action="/api/pipeline/sources" aria-labelledby="source-title">
+      <div id="source-presets" class="actions" aria-label="Примеры названий"></div>
+      <label for="source-name">Название источника (обязательно)</label>
+      <input id="source-name" name="name" maxlength="160" required aria-describedby="source-error">
+      <p id="source-error" role="status" class="muted small"></p>
+      <div class="actions"><button class="primary" type="submit">Создать ключ приёма</button></div>
+    </form>
+    <button type="button" class="quiet dialog-close" data-close-dialog="source-dialog">Закрыть</button>
+  </dialog>
+  <dialog id="credential-dialog" aria-labelledby="credential-title" class="settings-dialog">
+    <h2 id="credential-title">Адрес и ключ источника</h2>
+    <p class="muted small">Ключ показывается один раз. Передавайте его в заголовке <code>Authorization: Bearer …</code>.</p>
+    <label for="credential-url">Адрес приёма</label>
+    <div class="credential-field">
+      <input id="credential-url" readonly spellcheck="false">
+      <button type="button" data-copy-field="credential-url" aria-label="Скопировать адрес">Копировать</button>
+    </div>
+    <label for="credential-key">Ключ источника</label>
+    <div class="credential-field">
+      <input id="credential-key" readonly spellcheck="false">
+      <button type="button" data-copy-field="credential-key" aria-label="Скопировать ключ">Копировать</button>
+    </div>
+    <p class="small muted" id="credential-note" role="status"></p>
+    <p><a id="credential-example" download="pacto-example.json">Скачать пример JSON</a></p>
+    <p class="muted small" id="credential-example-hint"></p>
+    <button type="button" class="quiet dialog-close" data-close-dialog="credential-dialog">Готово</button>
+  </dialog>
+  <dialog id="rotate-dialog" aria-labelledby="rotate-title" class="settings-dialog">
+    <h2 id="rotate-title">Выпустить новый ключ?</h2>
+    <p class="muted">Старый ключ сразу перестанет работать. Замените его в адаптере.</p>
+    <form id="rotate-form" method="post" aria-labelledby="rotate-title">
+      <input type="hidden" id="rotate-id" name="source">
+      <p class="muted small" id="rotate-error" role="status"></p>
+      <div class="actions"><button class="primary" type="submit">Выпустить ключ</button>
+      <button type="button" class="quiet" data-close-dialog="rotate-dialog">Отмена</button></div>
+    </form>
   </dialog>
   <p id="notice" class="notice" role="status"></p>
 </body>

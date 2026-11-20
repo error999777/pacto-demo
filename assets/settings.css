@@ -1,0 +1,59 @@
+.settings {
+  max-width: 83rem;
+  margin-inline: auto;
+  padding: 1.4rem clamp(1rem, 3.5cqi, 2rem) 2.5rem;
+}
+.settings-section + .settings-section { margin-top: 1.8rem; }
+.settings-heading { display: flex; justify-content: space-between; align-items: start; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.settings-heading p { margin-top: .25rem; }
+.source-grid, .catalog-grid { display: grid; gap: .75rem; }
+.source-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); align-items: start; }
+.catalog-grid { grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); }
+.connections, .joining, .source-card {
+  min-width: 0;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: .6rem;
+  overflow-wrap: anywhere;
+}
+.connections > p, .joining ol { margin-top: .55rem; }
+.joining { border-inline-start: 3px solid var(--blue); }
+.joining summary { font-weight: 600; min-height: 1.6rem; }
+.joining ol { margin-bottom: 0; padding-inline-start: 1.2rem; color: var(--muted); }
+.joining li + li { margin-top: .45rem; }
+.joining strong { color: var(--text); }
+.connection-row { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-top: .65rem; padding-top: .65rem; border-top: 1px solid var(--border); }
+.connection-row .healthy { color: var(--green); }
+.source-symbol {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.35rem;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border: 1px solid #385177;
+  border-radius: .55rem;
+  background: #203655;
+  color: #c4dcff;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.connection-actions { margin-inline-start: auto; }
+.connection-actions button { font-size: .84rem; }
+.source-card { display: flex; flex-direction: column; gap: .6rem; }
+.source-card-title { display: flex; align-items: center; gap: .6rem; }
+.source-card > .actions { margin-top: auto; }
+.source-card details { border-top: 1px solid var(--border); padding-top: .45rem; }
+.source-card details > * + * { margin-top: .35rem; }
+.settings a, .settings-dialog a { color: var(--blue); text-underline-offset: .15em; }
+.settings a:focus-visible, .settings-dialog a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.source-card a { display: block; }
+.settings-filters { margin-bottom: .7rem; }
+.settings-dialog { width: min(calc(100% - 1.5rem), 35rem); overflow-wrap: anywhere; }
+.settings-dialog :is(input:not([type=hidden]), button) { min-height: 3rem; }
+.settings-dialog p:empty { display: none; }
+.dialog-close { margin-block-start: .65rem; }
+.credential-field { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .35rem; }
+.credential-field input { flex: 1 1 11rem; margin: 0; }
+.history-coverage { margin-block-end: .55rem; }
+@container (max-width: 46rem) { .source-grid { grid-template-columns: minmax(0, 1fr); } }

@@ -8,8 +8,10 @@
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/pipeline.css">
   <link rel="stylesheet" href="assets/settings.css">
+  <link rel="stylesheet" href="assets/analytics.css">
   <script defer src="assets/pipeline.js"></script>
   <script defer src="assets/settings.js"></script>
+  <script defer src="assets/analytics.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -29,7 +31,7 @@
       <nav id="nav" aria-label="Разделы">
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
         <button type="button" data-view="clients">Клиенты</button>
-        <button type="button" data-view="results">Результаты</button>
+        <button type="button" data-view="results">Аналитика</button>
         <button type="button" data-view="settings">Настройки</button>
       </nav>
       <footer class="account">
@@ -58,7 +60,7 @@
         </section>
         <section class="detail" id="detail" aria-label="Досье клиента"></section>
       </div>
-      <section class="report" id="results" aria-label="Результаты сделок" hidden></section>
+      <section class="analytics" id="results" aria-label="Аналитика сделок" hidden></section>
       <div id="settings" class="settings" hidden></div>
     </main>
   </div>

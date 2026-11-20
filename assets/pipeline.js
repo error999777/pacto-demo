@@ -11,7 +11,7 @@ const channels = {call: "Звонок", meeting: "Встреча", message: "М�
 const actionLabels = {contacted: "Связались", invited: "Приглашение отправлено", meeting_held: "Встреча состоялась",
   dismissed: "Сигнал снят"};
 const suggestionLabels = {action: "Нужен контакт", verify: "Нужно проверить"};
-const taskLabels = {open: "Открыта", done: "Выполнена", cancelled: "Отменена"};
+const taskLabels = {open: "Открыта", in_progress: "В работе", done: "Выполнена", cancelled: "Отменена"};
 const dateFormat = new Intl.DateTimeFormat("ru-RU", {day: "numeric", month: "short", hour: "2-digit",
   minute: "2-digit", timeZone: "Europe/Minsk"});
 const numberFormat = new Intl.NumberFormat("ru-RU");
@@ -20,7 +20,7 @@ const previewPath = ["contacted", "invited", "meeting_held"];
 let snapshots = [];
 let snapshotIndex = 0;
 let data;
-let view = location.hash === "#settings" ? "settings" : "queue";
+let view = entrance();
 let customerId;
 let dealId;
 let focusedCall;
@@ -32,6 +32,11 @@ let noticeTimer;
 function esc(value) {
   const entities = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"};
   return String(value ?? "").replace(/[&<>"']/g, char => entities[char]);
+}
+function entrance() {
+  if (location.hash === "#settings") return "settings";
+  if (["#analytics", "#analytics-attention"].includes(location.hash)) return "results";
+  return "queue";
 }
 const date = value => value ? dateFormat.format(new Date(value)) : "";
 const money = value => numberFormat.format(value) + " BYN";
@@ -76,7 +81,7 @@ async function run(button, work, target) {
 function showLogin() {
   data = undefined;
   customerId = dealId = focusedCall = suggestionDraft = undefined;
-  view = location.hash === "#settings" ? "settings" : "queue";
+  view = entrance();
   dossierPane = "overview";
   $("search").value = "";
   $("main").dataset.open = "false";
@@ -128,7 +133,7 @@ function finance(deal) {
 }
 
 function render() {
-  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Результаты", settings: "Настройки"};
+  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Аналитика", settings: "Настройки"};
   $("title").textContent = labels[view];
   for (const button of $("nav").querySelectorAll("[data-view]")) {
     if (button.dataset.view === view) button.setAttribute("aria-current", "page");
@@ -223,7 +228,7 @@ function renderDossier() {
   const displayedCalls = allCalls || !deal ? calls : calls.filter(call => call.deal_id === deal.id);
   const inside = allCalls ? deals : deal ? [deal] : [];
   const tasks = inside.flatMap(owner => owner.tasks.map(task => ({...task, deal_title: owner.title})));
-  tasks.sort((a, b) => (a.status !== "open") - (b.status !== "open"));
+  tasks.sort((a, b) => (["done", "cancelled"].includes(a.status)) - (["done", "cancelled"].includes(b.status)));
   const next = deal?.suggestions.find(item => item.call_id === focusedCall) ||
     data.queue.find(item => item.deal_id === dealId) ||
     deal?.suggestions.find(item => ["contacted", "invited", "pending"].includes(item.state));
@@ -412,23 +417,6 @@ function minskInput(value) {
   return format.format(new Date(value)).replace(" ", "T");
 }
 
-function renderResults() {
-  const counts = [
-    [data.deals.filter(deal => deal.result === "won").length, "Выиграно сделок", "success"],
-    [data.deals.filter(deal => deal.actions.some(action => action.kind === "invited")).length, "Отправили приглашение", "info"],
-    [data.deals.filter(deal => deal.actions.some(action => action.kind === "meeting_held")).length, "Провели встречу", "neutral"]
-  ];
-  $("results").innerHTML = `<div class="metrics">${counts.map(([count, label, tone]) =>
-    `<div class="metric" data-tone="${tone}"><strong class="numeric">${count}</strong><span class="muted">${label}</span></div>`).join("")}</div>
-    <h2>Сделки</h2>
-    ${data.deals.map(deal => `<div class="report-row">
-      <div><button type="button" class="source-link" data-report-deal="${esc(deal.id)}">${esc(deal.title)}</button>
-      <p class="small muted">${esc(entity(data.clients, deal.client_id).name)} · ${esc(stages[deal.stage])}</p></div>
-      <div><span class="tag status-chip" data-tone="${deal.result === "won" ? "success" : "neutral"}">${dealResults[deal.result]}</span>${deal.actions.length ?
-        `<p class="small muted">${actionLabels[deal.actions.at(-1).kind]}</p>` : ""}</div>
-      </div>`).join("") || '<p class="empty">Сделок пока нет.</p>'}`;
-}
-
 function openCall(id, lineId) {
   if (dossierPane !== "history") {
     dossierPane = "history";
@@ -470,6 +458,7 @@ $("results").addEventListener("click", event => {
   const deal = entity(data.deals, button.dataset.reportDeal);
   view = "clients";
   select(deal.client_id, deal.id);
+  if (button.dataset.reportCall) openCall(button.dataset.reportCall);
 });
 $("detail").addEventListener("click", event => {
   const button = event.target.closest("button");

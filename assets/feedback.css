@@ -8,7 +8,10 @@
 .feedback-head, .feedback-send {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
 }
-.feedback-head { position: sticky; inset-block-start: 0; z-index: 1; background: var(--surface); }
+.feedback-head {
+  position: sticky; inset-block-start: 0; z-index: 1;
+  background: var(--surface); box-shadow: 0 -1.4rem 0 var(--surface);
+}
 .feedback-head .quiet { min-height: 2.4rem; }
 .feedback-tabs { margin-block: .65rem .3rem; }
 .feedback-dialog #feedback-message { width: 100%; margin-top: .35rem; }

@@ -1,0 +1,44 @@
+.sidebar nav button { text-align: start; align-items: center; font-size: .9rem; }
+#queue-count:not(:empty) { color: var(--blue); font-variant-numeric: tabular-nums; }
+.pipeline { grid-template-columns: minmax(16rem, .65fr) minmax(0, 1.35fr); }
+.pipeline .detail { overflow-wrap: anywhere; }
+#list-tools { margin-bottom: .9rem; }
+#list-tools input { width: 100%; margin-top: .35rem; }
+.pipeline .deal strong { font-size: .98rem; }
+.pipeline .deal .row-meta { margin-top: .35rem; }
+.pipeline .deal .statusline { margin-top: .5rem; }
+.client-deals { display: grid; gap: .45rem; }
+.project {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: .35rem 1rem; background: var(--panel); border-color: var(--border);
+  text-align: start; overflow-wrap: anywhere;
+}
+.project[aria-pressed="true"] { background: #203655; border-color: #587da9; }
+.dossier-section { padding-block-start: .95rem; border-top: 1px solid var(--border); }
+.dossier-section h3, .priority h3 { margin-bottom: .55rem; }
+.dossier-section .muted, .priority .muted { line-height: 1.45; }
+.deal-facts { display: flex; flex-wrap: wrap; column-gap: 1.4rem; row-gap: .4rem; margin: .65rem 0; }
+.deal-facts dt { color: var(--muted); font-size: .79rem; }
+.deal-facts dd { margin: 0; }
+.priority { padding: .85rem 1rem; background: #201f25; border: 1px solid #5b4b3e; border-inline-start: 3px solid var(--warm); border-radius: .45rem; }
+.priority > * + *, .editor > .actions { margin-top: .65rem; }
+.priority[data-state="contacted"], .priority[data-state="invited"] { background: var(--panel); border-color: var(--border); border-inline-start-color: var(--blue); }
+.client-header h2, .deal-header h3 { font-size: 1.22rem; }
+.source-link { min-height: 2rem; padding: .15rem 0; border: 0; color: var(--blue); background: transparent; text-align: start; text-decoration: underline; text-underline-offset: .18em; }
+.source-link:hover { background: transparent; color: #c4dcff; }
+.task-list, .call-list { display: grid; gap: .45rem; }
+.task, .call-card { padding: .65rem .8rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--panel); }
+.task p + p { margin-top: .2rem; }
+.task span[data-state="completed"] { color: var(--green); }
+.call-card summary, .draft summary { min-height: 2rem; color: var(--blue); }
+.call-result { font-weight: 600; }
+.call-summary, .call-card details { margin-top: .35rem; }
+.call-card .editor { margin-top: .85rem; }
+.dossier-section .filters { margin-bottom: .6rem; }
+.report .source-link { font-weight: 600; }
+.preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: .55rem 1rem; padding: .65rem 1rem; background: var(--surface); color: var(--muted); font-size: .86rem; }
+.notice:empty { border: 0; padding: 0; box-shadow: none; }
+.pipeline .record-form { margin-block: .6rem .25rem; }
+.record-form textarea { min-height: 4rem; }
+#title:focus, .client-header h2:focus { outline: none; }
+@media (max-width: 31rem) { .pipeline .deal { padding: .7rem .75rem; } }

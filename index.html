@@ -1,210 +1,74 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-preview>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pacto — демо заявок</title>
-<style>
-body { margin: 0; padding: clamp(.75rem, 2vw, 1.5rem); background: #0d121a; color: #d5e0f1; font: 15px/1.5 "Segoe UI", sans-serif; }
-main { max-width: 1080px; margin: 0 auto; }
-.intro { margin: 0 0 .75rem; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pacto — клиенты и сделки</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/pipeline.css">
+  <script defer src="assets/pipeline.js"></script>
 </head>
 <body>
-<main>
-<p class="intro"><strong>Интерактивное демо Pacto.</strong> Заявки вымышлены. Отправка сообщений и результаты имитируются в браузере.</p>
-<style>
-#pacto-pivot { --p-bg:#11161f; --p-side:#151b25; --p-surface:#1b2330; --p-border:#303c4d; --p-text:#edf2fa; --p-muted:#a6b3c6; --p-blue:#3478ed; --p-blue-soft:#1c3050; --p-green:#78dab1; --p-amber:#f0bf77; color-scheme:dark; color:var(--p-text); background:var(--p-bg); font:14px/1.5 'Segoe UI',Arial,sans-serif; border:1px solid var(--p-border); border-radius:14px; container-type:inline-size; overflow:clip; }
-#pacto-pivot * { box-sizing:border-box; }
-#pacto-pivot [hidden] { display:none !important; }
-#pacto-pivot button,#pacto-pivot input,#pacto-pivot select,#pacto-pivot textarea { font:inherit; }
-#pacto-pivot button { color:inherit; }
-#pacto-pivot button:focus-visible,#pacto-pivot textarea:focus-visible,#pacto-pivot select:focus-visible { outline:2px solid #9cc4ff; outline-offset:3px; }
-#pacto-pivot button { cursor:var(--cursor-interaction,pointer); }
-#pacto-pivot button:disabled { cursor:default; opacity:.55; }
-#pacto-pivot h2,#pacto-pivot h3,#pacto-pivot p { margin:0; }
-#pacto-pivot .p-shell { display:grid; grid-template-columns:165px minmax(0,1fr); min-height:690px; }
-#pacto-pivot .p-sidebar { background:var(--p-side); border-right:1px solid var(--p-border); display:flex; flex-direction:column; padding:26px 13px 16px; gap:28px; }
-#pacto-pivot .p-logo { font-size:25px; font-weight:650; letter-spacing:-1px; display:flex; align-items:center; gap:9px; padding:0 9px; }
-#pacto-pivot .p-logo-mark { display:grid; place-items:center; width:29px; height:31px; border-radius:9px 9px 9px 3px; background:var(--p-blue); font-size:22px; color:white; }
-#pacto-pivot .p-company { padding:0 9px; }
-#pacto-pivot .p-muted { color:var(--p-muted); }
-#pacto-pivot .p-small { font-size:12px; }
-#pacto-pivot .p-nav { display:grid; gap:6px; }
-#pacto-pivot .p-nav button { display:flex; align-items:center; gap:9px; border:0; background:transparent; border-radius:7px; padding:11px 9px; text-align:left; color:var(--p-muted); }
-#pacto-pivot .p-nav button[aria-pressed=true] { background:var(--p-blue-soft); color:#b8d3ff; }
-#pacto-pivot .p-nav svg { width:17px; height:17px; }
-#pacto-pivot .p-count { margin-left:auto; font-size:12px; }
-#pacto-pivot .p-account { margin-top:auto; border-top:1px solid var(--p-border); padding:17px 9px 0; }
-#pacto-pivot .p-avatar { width:29px; height:29px; border-radius:50%; display:grid; place-items:center; background:#2c3a51; font-size:11px; flex-shrink:0; }
-#pacto-pivot .p-inline { display:flex; align-items:center; gap:9px; }
-#pacto-pivot .p-main { min-width:0; }
-#pacto-pivot .p-header { display:flex; justify-content:space-between; align-items:center; padding:25px 25px 21px; gap:12px; border-bottom:1px solid var(--p-border); padding-right:100px; }
-#pacto-pivot .p-header h2 { font-size:23px; font-weight:600; letter-spacing:-.5px; }
-#pacto-pivot .p-header p { margin-top:2px; }
-#pacto-pivot .p-demo { color:var(--p-muted); font-size:12px; white-space:nowrap; }
-#pacto-pivot .p-workspace { display:grid; grid-template-columns:minmax(260px,.85fr) minmax(330px,1.15fr); }
-#pacto-pivot .p-queue { border-right:1px solid var(--p-border); padding:18px 13px; }
-#pacto-pivot .p-filters { display:flex; flex-wrap:wrap; gap:4px; margin:0 2px 16px; }
-#pacto-pivot .p-filter { border:1px solid transparent; background:transparent; color:var(--p-muted); padding:6px 8px; border-radius:6px; font-size:12px; }
-#pacto-pivot .p-filter[aria-pressed=true] { background:#283448; color:var(--p-text); }
-#pacto-pivot .p-list { display:grid; gap:9px; }
-#pacto-pivot .p-lead { display:block; width:100%; text-align:left; border:1px solid var(--p-border); border-left:3px solid var(--p-amber); border-radius:7px; background:var(--p-side); padding:13px 12px; }
-#pacto-pivot .p-lead[aria-pressed=true] { background:#1b2b43; border-top-color:#5575a5; border-bottom-color:#5575a5; border-right-color:#5575a5; }
-#pacto-pivot .p-lead[data-state=waiting] { border-left-color:#7baaff; }
-#pacto-pivot .p-lead[data-state=scheduled],#pacto-pivot .p-lead[data-state=completed] { border-left-color:var(--p-green); }
-#pacto-pivot .p-lead-top { display:flex; justify-content:space-between; gap:9px; align-items:baseline; }
-#pacto-pivot .p-lead strong { font-weight:600; }
-#pacto-pivot .p-lead-reason { display:block; margin:10px 0 9px; }
-#pacto-pivot .p-statusline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11px; }
-#pacto-pivot .p-status { color:var(--p-amber); background:#3a3024; border-radius:4px; padding:2px 6px; }
-#pacto-pivot .p-status.blue { background:var(--p-blue-soft); color:#b2d0ff; }
-#pacto-pivot .p-status.green { background:#20392f; color:var(--p-green); }
-#pacto-pivot .p-detail { padding:22px 24px; min-width:0; }
-#pacto-pivot .p-detail-head { display:flex; justify-content:space-between; gap:12px; margin-bottom:16px; }
-#pacto-pivot .p-detail-head strong { font-size:17px; font-weight:600; }
-#pacto-pivot .p-detail h3 { font-size:20px; line-height:1.3; font-weight:600; letter-spacing:-.3px; margin-bottom:10px; }
-#pacto-pivot .p-section-label { display:block; margin:21px 0 8px; color:var(--p-muted); font-size:12px; }
-#pacto-pivot .p-quote { margin:0; background:var(--p-surface); border-radius:7px; padding:13px 14px; }
-#pacto-pivot .p-quote p+p { margin-top:9px; }
-#pacto-pivot .p-role { color:#9fc2ff; }
-#pacto-pivot .p-checks { display:grid; gap:6px; margin-top:12px; font-size:12px; }
-#pacto-pivot .p-checks span { display:flex; gap:8px; align-items:baseline; }
-#pacto-pivot .p-dot { width:5px; height:5px; border-radius:50%; background:var(--p-muted); flex-shrink:0; }
-#pacto-pivot .p-composer { width:100%; resize:vertical; min-height:100px; padding:12px; color:var(--p-text); background:#121b28; border:1px solid #4c607b; border-radius:7px; }
-#pacto-pivot .p-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-#pacto-pivot .p-action { border:1px solid #4a5a70; background:transparent; padding:9px 12px; border-radius:7px; }
-#pacto-pivot .p-primary { background:#2563c7; border-color:#2563c7; color:white; }
-#pacto-pivot .p-footnote { margin-top:10px; font-size:11px; color:var(--p-muted); }
-#pacto-pivot .p-result-form { padding-top:15px; display:grid; gap:10px; }
-#pacto-pivot .p-result-form label { display:grid; gap:5px; }
-#pacto-pivot .p-result-form select { width:100%; padding:9px; background:var(--p-surface); border:1px solid #4a5a70; border-radius:6px; color:var(--p-text); }
-#pacto-pivot .p-success { margin-top:17px; padding:14px; background:#1b3028; color:#a0e8c9; border-radius:7px; }
-#pacto-pivot .p-back { display:none; border:0; background:transparent; padding:0 0 15px; color:#b2d0ff; }
-#pacto-pivot .p-empty { padding:26px 10px; color:var(--p-muted); }
-#pacto-pivot .p-report { padding:26px; }
-#pacto-pivot .p-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; margin-bottom:32px; }
-#pacto-pivot .p-metric { border-bottom:2px solid var(--p-border); padding-bottom:15px; }
-#pacto-pivot .p-metric strong { font-size:32px; font-weight:600; display:block; }
-#pacto-pivot .p-report h3 { font-size:18px; margin-bottom:17px; }
-#pacto-pivot .p-outcome { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:15px 0; border-top:1px solid var(--p-border); }
-#pacto-pivot .p-notice { padding:10px 24px; border-top:1px solid var(--p-border); color:#b8d3ff; font-size:12px; }
-@container (max-width:850px) { #pacto-pivot .p-shell { grid-template-columns:1fr; } #pacto-pivot .p-sidebar { flex-direction:row; align-items:center; gap:18px; padding:13px 18px; border-right:0; border-bottom:1px solid var(--p-border); } #pacto-pivot .p-company,#pacto-pivot .p-account { display:none; } #pacto-pivot .p-nav { display:flex; gap:3px; flex:1; } #pacto-pivot .p-count { margin-left:2px; } #pacto-pivot .p-logo { padding:0; font-size:22px; } #pacto-pivot .p-header { padding:18px 22px; } }
-@container (max-width:620px) { #pacto-pivot .p-sidebar { flex-wrap:wrap; gap:12px; padding:16px; } #pacto-pivot .p-nav { flex-basis:100%; justify-content:space-between; } #pacto-pivot .p-nav button { padding:10px 7px; font-size:13px; } #pacto-pivot .p-header { padding:17px; align-items:start; } #pacto-pivot .p-header h2 { font-size:22px; } #pacto-pivot .p-workspace { display:block; } #pacto-pivot .p-queue { border-right:0; padding:14px; } #pacto-pivot .p-detail { display:none; padding:18px; } #pacto-pivot[data-detail=true] .p-queue { display:none; } #pacto-pivot[data-detail=true] .p-detail { display:block; } #pacto-pivot .p-back { display:block; } #pacto-pivot .p-composer { font-size:16px; } #pacto-pivot .p-metrics { gap:12px; } #pacto-pivot .p-metric strong { font-size:26px; } #pacto-pivot .p-metric span { font-size:12px; } #pacto-pivot .p-report { padding:18px; } #pacto-pivot .p-demo { white-space:normal; text-align:right; max-width:80px; } }
-@container (max-width:850px) { #pacto-pivot .p-shell { grid-template-columns:minmax(0,1fr); } #pacto-pivot .p-sidebar { min-width:0; } }
-@container (max-width:620px) { #pacto-pivot .p-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; min-width:0; } #pacto-pivot .p-nav button { font-size:12px; padding:10px 3px; gap:5px; justify-content:center; } #pacto-pivot .p-count { margin-left:0; } #pacto-pivot .p-quote { overflow-wrap:anywhere; } }
-</style>
-<div id="pacto-pivot" lang="ru" aria-label="Pacto после пивота" data-detail="false">
-  <div class="p-shell">
-    <aside class="p-sidebar">
-      <div class="p-logo"><span class="p-logo-mark" aria-hidden="true">p</span>pacto</div>
-      <div class="p-company">Окна рядом<div class="p-muted p-small">Отдел продаж · Минск</div></div>
-      <nav class="p-nav" aria-label="Разделы Pacto">
-        <button data-view="leads" aria-pressed="true">Заявки <span class="p-count" id="p-needed">3</span></button>
-        <button data-view="scheduled" aria-pressed="false">Назначено <span class="p-count" id="p-booked">2</span></button>
-        <button data-view="results" aria-pressed="false">Результаты</button>
+  <section class="login surface" id="login" aria-labelledby="login-title" hidden>
+    <div class="brand"><span aria-hidden="true">p</span>pacto</div>
+    <h1 id="login-title">Вход в Pacto</h1>
+    <form id="login-form">
+      <label for="access-code">Личный код</label>
+      <input type="password" id="access-code" autocomplete="current-password" required maxlength="64">
+      <button class="primary" type="submit">Войти</button>
+    </form>
+    <p class="muted small">Для демо: <code>demo-manager</code> или <code>demo-lead</code>.</p>
+  </section>
+  <div class="shell" id="workspace" hidden>
+    <aside class="sidebar">
+      <div class="brand"><span aria-hidden="true">p</span>pacto</div>
+      <p class="office">Проектные продажи <span class="muted small">Заказная ИТ-разработка</span></p>
+      <nav id="nav" aria-label="Разделы">
+        <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
+        <button type="button" data-view="clients">Все клиенты</button>
+        <button type="button" data-view="results">Результаты</button>
       </nav>
-      <div class="p-account"><div class="p-inline"><span class="p-avatar">МВ</span><div>Мария Волкова<div class="p-muted p-small">Менеджер</div></div></div><div class="p-muted p-small" style="margin-top:18px">Демонстрационные данные</div></div>
+      <footer class="account">
+        <span id="actor"></span>
+        <button type="button" class="quiet" id="logout">Выйти</button>
+      </footer>
     </aside>
-    <main class="p-main">
-      <header class="p-header"><div><h2 id="p-title">Заявки</h2><p class="p-muted p-small" id="p-subtitle">3 заявки требуют вашего действия</p></div><span class="p-demo">20 ноября<br>Пятница</span></header>
-      <div class="p-workspace" id="p-workspace">
-        <section class="p-queue" aria-label="Очередь заявок">
-          <div class="p-filters" aria-label="Состояние заявки"><button class="p-filter" data-filter="action" aria-pressed="true">Нужно связаться</button><button class="p-filter" data-filter="waiting" aria-pressed="false">Ждём ответа</button><button class="p-filter" data-filter="all" aria-pressed="false">Все</button></div>
-          <div class="p-list" id="p-list"></div>
-        </section>
-        <section class="p-detail" id="p-detail" aria-label="Выбранная заявка"></section>
+    <main class="main" id="main">
+      <header class="heading">
+        <div><h1 id="title" tabindex="-1"></h1><p class="muted" id="subtitle"></p></div>
+        <button type="button" id="open-import" hidden>Загрузить данные</button>
+      </header>
+      <div class="preview-bar" id="preview-bar" hidden>
+        <p>Демо на вымышленных сделках. Можно пройти сценарий технической встречи.</p>
+        <button type="button" id="reset-preview" hidden>Начать заново</button>
       </div>
-      <section class="p-report" id="p-report" aria-label="Результаты работы" hidden></section>
-      <div class="p-notice" id="p-notice" role="status" aria-live="polite" hidden></div>
+      <div class="split pipeline" id="inbox">
+        <section class="queue" aria-label="Список">
+          <div id="list-tools">
+            <label for="search">Поиск по клиенту или сделке</label>
+            <input id="search" type="search" placeholder="Например, Альфа">
+          </div>
+          <div id="items" class="list"></div>
+        </section>
+        <section class="detail" id="detail" aria-label="Досье клиента"></section>
+      </div>
+      <section class="report" id="results" aria-label="Результаты сделок" hidden></section>
     </main>
   </div>
-</div>
-<script>
-(() => {
-  const root = document.getElementById('pacto-pivot');
-  const leads = [
-    {id:1,name:'Елена Смирнова',product:'Окна в двухкомнатную квартиру',amount:'6 400 BYN',reason:'Не подтверждён замер',state:'action',due:'Сегодня до 18:00',title:'Подтвердить время замера',quote:'В субботу после четырёх я буду дома. Давайте тогда.',promise:'Хорошо, завтра до шести подтвержу точное время.',history:'Звонок 19 ноября, 14:32',draft:'Елена, добрый день! Вы договаривались о замере в субботу после 16:00. Можем приехать в 16:30. Вам удобно?',slot:'21 ноября, 16:30'},
-    {id:2,name:'Андрей Ковалёв',product:'Остекление балкона',amount:'3 800 BYN',reason:'Клиент ждёт расчёт',state:'action',due:'Срок прошёл вчера',title:'Уточнить готовность расчёта',quote:'Пришлите расчёт, и я смогу принять решение.',promise:'Подготовим и пришлём завтра.',history:'Звонок 18 ноября, 11:10',draft:'Андрей, добрый день! Уточняю готовность расчёта по вашему балкону. Вернусь с информацией сегодня до 18:00.',slot:'23 ноября, 11:00'},
-    {id:3,name:'Ирина Новик',product:'Входная дверь',amount:'2 150 BYN',reason:'Просила вернуться в пятницу',state:'action',due:'Сегодня',title:'Вернуться к обсуждению двери',quote:'Я обсужу с мужем. Напишите мне в пятницу, пожалуйста.',promise:'Договорились, вернусь к вам в пятницу.',history:'Звонок 17 ноября, 16:05',draft:'Ирина, добрый день! Возвращаюсь к нашему разговору, как договаривались. Удалось обсудить выбор двери? Могу помочь с оставшимися вопросами.',slot:'23 ноября, 15:00'},
-    {id:4,name:'Сергей Мороз',product:'Замена окон в доме',amount:'8 200 BYN',reason:'Сообщение отправлено',state:'waiting',due:'Сегодня, 10:15',title:'Ждём ответ клиента',quote:'Мне нужно выбрать день, чтобы быть дома.',promise:'Напишу вам с вариантами времени.',history:'Звонок 19 ноября, 12:00',draft:'Сергей, добрый день! Для замера свободны суббота в 11:00 и понедельник в 15:00. Какое время вам удобно?',slot:'23 ноября, 15:00'},
-    {id:5,name:'Ольга Лебедева',product:'Окна на кухню',amount:'2 900 BYN',reason:'Замер назначен',state:'scheduled',due:'21 ноября, 11:00',title:'Время замера подтверждено',quote:'Да, суббота в одиннадцать подходит.',promise:'Записала, замерщик будет у вас.',history:'Переписка 20 ноября, 09:40',draft:'',slot:'21 ноября, 11:00'},
-    {id:6,name:'Дмитрий Соколов',product:'Остекление лоджии',amount:'4 100 BYN',reason:'Получена предоплата',state:'completed',due:'19 ноября',title:'Клиент оформил заказ',quote:'Смета устраивает, готов оформить заказ.',promise:'Отправляю договор и реквизиты.',history:'Звонок 18 ноября, 15:10',draft:'',slot:'18 ноября, 11:00'}
-  ];
-  let selected = 1;
-  let filter = 'action';
-  let view = 'leads';
-  const drafts = Object.fromEntries(leads.map(lead => [lead.id,lead.draft]));
-  const labels = {action:'Нужно действие',waiting:'Ждём ответа',scheduled:'Замер назначен',completed:'Предоплата'};
-  const el = id => root.querySelector('#'+id);
-  const escape = text => String(text).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  function notice(text) { el('p-notice').hidden = false; el('p-notice').textContent = text; }
-  function count(state) { return leads.filter(lead => lead.state === state).length; }
-  function renderList() {
-    const visible = leads.filter(lead => view === 'scheduled' ? lead.state === 'scheduled' : filter === 'all' || lead.state === filter);
-    el('p-list').innerHTML = visible.length ? visible.map(lead => `<button class="p-lead" data-id="${lead.id}" data-state="${lead.state}" aria-pressed="${lead.id===selected}"><span class="p-lead-top"><strong>${lead.name}</strong><span class="p-muted p-small">${lead.amount}</span></span><span class="p-muted p-small">${lead.product}</span><span class="p-lead-reason">${lead.reason}</span><span class="p-statusline"><span class="p-status ${lead.state==='waiting'?'blue':lead.state==='action'?'':'green'}">${labels[lead.state]}</span><span class="p-muted">${lead.due}</span></span></button>`).join('') : '<p class="p-empty">В этой очереди пока нет заявок.</p>';
-    root.querySelectorAll('[data-filter]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.filter===filter)));
-  }
-  function renderDetail() {
-    const lead = leads.find(item => item.id === selected);
-    const finished = ['scheduled','completed'].includes(lead.state);
-    el('p-detail').innerHTML = `<button class="p-back" data-action="back">← К заявкам</button><div class="p-detail-head"><div><strong>${lead.name}</strong><p class="p-muted p-small">${lead.product}</p></div><span class="p-avatar">МВ</span></div><h3>${finished?lead.title:lead.state==='waiting'?'Ждём ответ клиента':lead.title}</h3><p class="p-muted p-small">${lead.state==='action'?'Договорённость есть. Следующий шаг пока не подтверждён.':finished?'Результат сохранён в карточке заявки.':'Повторное сообщение приостановлено до ответа.'}</p><span class="p-section-label">На чём основана заявка</span><blockquote class="p-quote"><p><span class="p-role p-small">Клиент</span><br>«${lead.quote}»</p><p><span class="p-muted p-small">Мария, менеджер</span><br>«${lead.promise}»</p></blockquote><div class="p-checks"><span><i class="p-dot"></i>${lead.history}</span><span><i class="p-dot"></i>${finished?'Результат подтверждён менеджером':lead.state==='waiting'?'Сообщение сохранено в истории':'В доступной истории CRM подтверждения нет'}</span></div>${finished?`<div class="p-success">${lead.state==='completed'?'Предоплата 1 200 BYN получена 19 ноября':`Замер · ${lead.slot}`}<div class="p-small" style="margin-top:5px">Повторные обращения по этому шагу остановлены</div></div>`:`<label class="p-section-label" for="p-message">${lead.state==='waiting'?'Последнее сообщение':'Сообщение клиенту'}</label><textarea id="p-message" class="p-composer" ${lead.state==='waiting'?'readonly':''}>${escape(drafts[lead.id])}</textarea><div class="p-actions">${lead.state==='action'?'<button class="p-action p-primary" data-action="send">Имитировать отправку</button><button class="p-action" data-action="result">Уже связались</button>':'<button class="p-action p-primary" data-action="result">Отметить результат</button>'}</div><p class="p-footnote">${lead.state==='action'?'Личная переписка вне CRM недоступна. Уточните, связывались ли с клиентом.':'Демо-отправка. Результат контакта можно отметить вручную.'}</p><form class="p-result-form" id="p-result-form" hidden><label for="p-outcome">Результат контакта<select id="p-outcome"><option value="scheduled">Замер назначен</option><option value="waiting">Клиент пока думает</option></select></label><label id="p-slot-label" for="p-slot">Подтверждённое время<select id="p-slot"><option>${lead.slot}</option><option>24 ноября, 12:00</option></select></label><div class="p-actions"><button class="p-action p-primary" type="submit">Сохранить результат</button><button class="p-action" type="button" data-action="cancel">Отмена</button></div></form>`}`;
-    const textarea = el('p-message');
-    if (textarea) textarea.addEventListener('input', () => { drafts[lead.id] = textarea.value; });
-    const form = el('p-result-form');
-    if (form) {
-      el('p-outcome').addEventListener('change', () => { el('p-slot-label').hidden = el('p-outcome').value !== 'scheduled'; });
-      const saveResult = event => {
-        event.preventDefault();
-        lead.state = el('p-outcome').value;
-        lead.slot = el('p-slot').value;
-        lead.reason = lead.state==='scheduled'?'Замер назначен':'Клиент пока думает';
-        lead.title = lead.state==='scheduled'?'Время замера подтверждено':'Ждём решение клиента';
-        lead.due = lead.state==='scheduled'?lead.slot:'После повторного контакта';
-        filter = 'all';
-        render();
-        notice(lead.state==='scheduled'?`${lead.name} — замер назначен. Результат появился в отчёте.`:'Результат сохранён. Ждём решение клиента.');
-      };
-      form.addEventListener('submit', saveResult);
-      const saveButton = form.querySelector('button[type="submit"]');
-      saveButton.type = 'button';
-      saveButton.addEventListener('click', saveResult);
-    }
-  }
-  function renderReport() {
-    const successful = leads.filter(lead => ['scheduled','completed'].includes(lead.state));
-    el('p-report').innerHTML = `<div class="p-metrics"><div class="p-metric"><strong>${successful.length}</strong><span class="p-muted">Назначено замеров</span></div><div class="p-metric"><strong>${count('completed')}</strong><span class="p-muted">Замер состоялся</span></div><div class="p-metric"><strong>1 200</strong><span class="p-muted">Предоплата, BYN</span></div></div><h3>Результаты по заявкам</h3>${successful.map(lead=>`<div class="p-outcome"><div>${lead.name}<div class="p-muted p-small">${lead.product}</div></div><div><span class="p-status green">${labels[lead.state]}</span><div class="p-muted p-small" style="margin-top:5px">${lead.state==='completed'?'1 200 BYN · 19 ноября':lead.slot}</div></div></div>`).join('')}<p class="p-footnote" style="margin-top:20px">Демонстрационные результаты после повторного контакта. Прирост продаж оценивается сравнением с обычным процессом.</p>`;
-  }
-  function render() {
-    el('p-needed').textContent = count('action');
-    el('p-booked').textContent = count('scheduled');
-    el('p-title').textContent = {leads:'Заявки',scheduled:'Назначенные замеры',results:'Результаты'}[view];
-    el('p-subtitle').textContent = view==='leads'?`Требуют действия — ${count('action')}`:view==='scheduled'?'Подтверждённое время визита':'16–20 ноября · После повторного контакта';
-    root.querySelectorAll('[data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));
-    root.querySelector('.p-filters').hidden = view==='scheduled';
-    el('p-workspace').hidden = view==='results';
-    el('p-report').hidden = view!=='results';
-    renderList(); renderDetail(); renderReport();
-  }
-  root.addEventListener('click', event => {
-    const button = event.target.closest('button');
-    if (!button) return;
-    if (button.dataset.id) { selected = Number(button.dataset.id); root.dataset.detail = 'true'; renderList(); renderDetail(); }
-    if (button.dataset.filter) { filter = button.dataset.filter; const first=leads.find(lead=>filter==='all'||lead.state===filter); if(first) selected=first.id; renderList(); renderDetail(); }
-    if (button.dataset.view) { view=button.dataset.view; root.dataset.detail='false'; if(view==='scheduled'){const first=leads.find(lead=>lead.state==='scheduled'); if(first) selected=first.id;} render(); }
-    if (button.dataset.action==='back') root.dataset.detail='false';
-    if (button.dataset.action==='result') { el('p-result-form').hidden=false; el('p-outcome').focus(); }
-    if (button.dataset.action==='cancel') el('p-result-form').hidden=true;
-    if (button.dataset.action==='send') {
-      const lead = leads.find(item=>item.id===selected);
-      if(!drafts[lead.id].trim()){notice('Добавьте текст сообщения.'); el('p-message').focus(); return;}
-      lead.state='waiting'; lead.reason='Сообщение отправлено'; lead.due='Только что'; filter='waiting'; render(); notice('Демо-сообщение отправлено. Теперь можно отметить результат контакта.');
-    }
-  });
-  render();
-})();
-</script>
-
-</main>
+  <dialog id="import-dialog" aria-labelledby="import-title">
+    <h2 id="import-title">Загрузить данные</h2>
+    <p class="muted">Выберите JSON с синтетическими клиентами, сделками, звонками и задачами или загрузите готовый пример.</p>
+    <form id="import-form">
+      <label for="import-file">Файл JSON</label>
+      <input id="import-file" type="file" accept=".json,application/json" required>
+      <div class="actions">
+        <button class="primary" type="submit">Импортировать файл</button>
+        <button id="demo" type="button">Загрузить пример</button>
+        <button id="close-import" type="button" class="quiet">Закрыть</button>
+      </div>
+    </form>
+    <p id="import-notice" class="muted small" role="status"></p>
+  </dialog>
+  <p id="notice" class="notice" role="status"></p>
 </body>
 </html>

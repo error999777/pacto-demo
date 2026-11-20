@@ -36,6 +36,7 @@ function esc(value) {
 function entrance() {
   if (location.hash === "#settings") return "settings";
   if (location.hash === "#team") return "team";
+  if (location.hash === "#reminders") return "reminders";
   if (["#analytics", "#analytics-attention"].includes(location.hash)) return "results";
   return "queue";
 }
@@ -82,6 +83,7 @@ async function run(button, work, target) {
 
 function showLogin() {
   data = undefined;
+  updateReminderClock();
   customerId = dealId = focusedCall = undefined;
   view = entrance();
   dossierPane = "overview";
@@ -94,9 +96,10 @@ function showLogin() {
 }
 
 function demoSnapshot() {
-  return {...snapshots[snapshotIndex], role: demoRole,
+  const member = demoRole === "lead" ? "local-lead" : "local-manager";
+  return {...snapshots[snapshotIndex], role: demoRole, member_id: member,
     name: demoRole === "lead" ? "Анна Соколова" : "Мария Волкова",
-    member_id: demoRole === "lead" ? "local-lead" : "local-manager"};
+    reminders: demoReminders(member)};
 }
 
 async function refresh() {
@@ -143,18 +146,25 @@ function finance(deal) {
 function render() {
   if (view === "team" && !canManageTeam()) view = "queue";
   $("nav").querySelector('[data-view="team"]').hidden = !canManageTeam();
-  const labels = {queue: "Нужны действия", clients: "Клиенты", results: "Аналитика", team: "Команда", settings: "Настройки"};
+  const labels = {queue: "Нужны действия", clients: "Клиенты", reminders: "Напоминания",
+    results: "Аналитика", team: "Команда", settings: "Настройки"};
   $("title").textContent = labels[view];
   for (const button of $("nav").querySelectorAll("[data-view]")) {
     if (button.dataset.view === view) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   }
   $("queue-count").textContent = data.queue.length || "";
-  $("open-import").hidden = preview || !canEdit() || view === "settings" || view === "team";
+  updateReminderClock();
+  $("open-import").hidden = preview || !canEdit() || ["settings", "team", "reminders"].includes(view);
   $("inbox").hidden = !["queue", "clients"].includes(view);
   $("results").hidden = view !== "results";
   $("settings").hidden = view !== "settings";
   $("team").hidden = view !== "team";
+  $("reminders").hidden = view !== "reminders";
+  if (view === "reminders") {
+    renderReminders();
+    return;
+  }
   if (view === "team") {
     renderTeam();
     return;
@@ -242,7 +252,8 @@ function renderDossier() {
   const calls = clientCalls(client.id);
   const displayedCalls = allCalls || !deal ? calls : calls.filter(call => call.deal_id === deal.id);
   const inside = allCalls ? deals : deal ? [deal] : [];
-  const tasks = inside.flatMap(owner => owner.tasks.map(task => ({...task, deal_title: owner.title})));
+  const tasks = inside.flatMap(owner => owner.tasks.map(task => ({...task, deal_title: owner.title,
+    reminder_deal: owner.id})));
   tasks.sort((a, b) => (["done", "cancelled"].includes(a.status)) - (["done", "cancelled"].includes(b.status)));
   const next = deal?.suggestions.find(item => item.call_id === focusedCall) ||
     data.queue.find(item => item.deal_id === dealId) ||
@@ -300,7 +311,7 @@ function renderDeal(deal, next, calls) {
 }
 
 function renderTasks(tasks, showProject) {
-  return `<section class="task-list" aria-label="Задачи и обещания">${tasks.map(task => `<div class="task">
+  return `<section class="task-list" aria-label="Задачи и обещания">${tasks.map(task => `<div class="task" tabindex="-1">
       <div class="row-head">
         <strong>${esc(task.title)}</strong>
         <span class="tag status-chip" data-tone="${task.status === "done" ? "success" : task.status === "open" ? "attention" : "neutral"}">${taskLabels[task.status]}</span>
@@ -312,7 +323,9 @@ function renderTasks(tasks, showProject) {
         ${task.result ? `<p class="small muted">${esc(task.result)}</p>` : ""}
         ${task.call_id ? sourceButton(task.call_id, "Показать обещание", task.line_id) :
           `<p class="small muted">${esc(entity(data.sources || [], task.source_id)?.name || "Импорт JSON")}</p>`}
-      </details>` : ""}</div>`).join("") || '<p class="empty">Задач пока нет.</p>'}</section>`;
+      </details>` : ""}
+      ${reminderButton(task.reminder_deal, reminderTaskKind(task), task.id, ["open", "in_progress"].includes(task.status))}
+    </div>`).join("") || '<p class="empty">Задач пока нет.</p>'}</section>`;
 }
 
 function renderHistory(calls) {
@@ -339,12 +352,13 @@ function renderNext(item, deal) {
     : item.allowed;
   const tone = item.state === "verify" || item.state === "pending" ? "attention" :
     ["meeting_held", "invited"].includes(item.state) ? "success" : "info";
-  return `<section class="priority" data-tone="${tone}" aria-labelledby="next-heading">
+  return `<section class="priority" data-tone="${tone}" aria-labelledby="next-heading" tabindex="-1">
     <span class="tag status-chip">${labels[item.state]}</span>
     <h3 id="next-heading">${esc(item.angle)}</h3>
     ${facts ? `<p class="priority-reason">${facts}</p>` : ""}
     ${item.due && item.state === "pending" ? `<p class="small muted">До ${esc(date(item.due))}</p>` : ""}
     ${canEdit() && allowed.length ? renderRecord(item.call_id, allowed) : ""}
+    ${reminderButton(deal.id, "step", call.id, !["resolved", "dismissed", "meeting_held"].includes(item.state))}
     <div class="priority-details">
     <details class="draft">
       <summary>Почему этот шаг</summary>
@@ -665,7 +679,7 @@ async function start() {
   if (preview) snapshots = await api("assets/demo-snapshots.json");
   await refresh();
 }
-start().catch(error => {
+document.addEventListener("DOMContentLoaded", () => start().catch(error => {
   if (!preview) showLogin();
   if (error.status !== 401) notify(error.message);
-});
+}));

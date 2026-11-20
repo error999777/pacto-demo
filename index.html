@@ -11,11 +11,13 @@
   <link rel="stylesheet" href="assets/analytics.css">
   <link rel="stylesheet" href="assets/team.css">
   <link rel="stylesheet" href="assets/feedback.css">
+  <link rel="stylesheet" href="assets/reminders.css">
   <script defer src="assets/pipeline.js"></script>
   <script defer src="assets/settings.js"></script>
   <script defer src="assets/analytics.js"></script>
   <script defer src="assets/team.js"></script>
   <script defer src="assets/feedback.js"></script>
+  <script defer src="assets/reminders.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -35,6 +37,7 @@
       <nav id="nav" aria-label="Разделы">
         <button type="button" data-view="queue">Нужны действия <span id="queue-count"></span></button>
         <button type="button" data-view="clients">Клиенты</button>
+        <button type="button" id="open-reminders" data-view="reminders">Напоминания <span id="reminder-count" aria-hidden="true"></span></button>
         <button type="button" data-view="results">Аналитика</button>
         <button type="button" data-view="team" hidden>Команда</button>
         <button type="button" data-view="settings">Настройки</button>
@@ -73,6 +76,7 @@
         <section class="detail" id="detail" aria-label="Досье клиента"></section>
       </div>
       <section class="analytics" id="results" aria-label="Аналитика сделок" hidden></section>
+      <section class="reminders" id="reminders" aria-label="Мои напоминания" hidden></section>
       <section class="team" id="team" aria-label="Сотрудники" hidden></section>
       <div id="settings" class="settings" hidden></div>
     </main>
@@ -188,6 +192,19 @@
     </form>
     <section id="feedback-inbox" aria-label="Входящие обращения" hidden></section>
     <p id="feedback-status" class="small muted" role="status"></p>
+  </dialog>
+  <dialog class="reminder-dialog" id="reminder-dialog" aria-labelledby="reminder-title">
+    <h2 id="reminder-title">Напоминание</h2>
+    <p class="reminder-context" id="reminder-context"></p>
+    <form id="reminder-form">
+      <label for="remind-at">Дата и время по Минску</label>
+      <input type="datetime-local" id="remind-at" required autofocus>
+      <p class="small reminder-error" id="reminder-status" role="status"></p>
+      <div class="actions">
+        <button type="button" class="quiet" id="cancel-reminder">Отмена</button>
+        <button type="submit" class="primary">Сохранить</button>
+      </div>
+    </form>
   </dialog>
 </body>
 </html>

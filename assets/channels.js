@@ -8,9 +8,6 @@ const providerFields = {
   telegram: {name: "Telegram", type: "Мессенджер", fields: [["key", "Токен бота", "password"]],
     help: "Используйте выделенного бота без вебхука. Появятся новые сообщения, которые получает бот.",
     docs: "https://core.telegram.org/bots/api#getupdates"},
-  max: {name: "MAX", type: "Мессенджер", fields: [["identifier", "Имя бота", "text"], ["key", "Токен бота", "password"]],
-    help: "Используйте выделенного бота пилота без вебхука. Pacto читает новые события через Long Polling.",
-    docs: "https://dev.max.ru/docs-api/methods/GET/updates/"},
   meet: {name: "Google Meet", type: "Встречи", fields: [
     ["identifier", "Аккаунт Google", "email"], ["key", "OAuth Client ID", "text"], ["secret", "OAuth Client Secret", "password"],
     ["account", "OAuth Refresh Token", "password"]
@@ -21,7 +18,7 @@ const providerFields = {
     ["key", "Client ID", "text"], ["secret", "Client Secret", "password"]
   ], help: "Используйте Server-to-Server OAuth с правами на чтение облачных записей организатора.",
     docs: "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"},
-  channel_feed: {name: "WhatsApp / свой API", type: "Адаптер", fields: [
+  channel_feed: {name: "JSON-адаптер", type: "Адаптер", fields: [
     ["endpoint", "Адрес JSON-выгрузки", "url"], ["key", "Bearer-токен (если нужен)", "password", "", false]
   ], help: "Укажите GET-адрес адаптера телефонии, WhatsApp Business или другого канала. Формат можно скачать."}
 };
@@ -30,38 +27,14 @@ const recordStates = {queued: "Запись в очереди", speaking: "Ра�
 let channelProvider;
 let channelPollTimer;
 let channelLoading = false;
-let channelAnchorOpened = false;
 let channelExampleUrl;
 let queueRows = [];
 let queueNext;
 let linkEvent;
 let linkWorkspace;
 
-function renderChannelSection() {
-  return `<section class="settings-section channel-section" id="channels" aria-labelledby="channels-heading">
-    <div class="settings-heading">
-      <div><h2 id="channels-heading">Звонки, встречи и переписка</h2>
-        <p class="small muted">История из подключённых каналов. Записи расшифровываются локально.</p></div>
-      ${preview || canManageTeam() ? '<button type="button" id="open-channel-pending">Без клиента</button>' : ""}
-    </div>
-    ${preview || canManageTeam() ? `<div class="crm-provider-list" aria-label="Каналы общения">
-      ${Object.entries(providerFields).map(([id, provider]) =>
-        `<button type="button" data-channel-provider="${id}">${provider.name}</button>`).join("")}
-    </div>` : ""}
-    <div class="connections" id="channel-connections">${renderChannelRows()}</div>
-  </section>`;
-}
-
 function renderChannelRows() {
-  if (preview) return `<div class="connection-row crm-entry">
-    <span class="source-symbol" aria-hidden="true">ВК</span>
-    <div class="crm-entry-info"><strong>Пример истории</strong><p class="small muted">Звонки и расшифровки в досье «Альфа Логистика»</p></div>
-    <button type="button" data-channel-demo>Открыть историю</button>
-  </div>`;
   const rows = data.channel_connections || [];
-  if (!rows.length) return `<p class="small muted">${canManageTeam()
-    ? "Выберите канал. Если клиент не определится, событие попадёт в «Без клиента»."
-    : "Подключениями управляет руководитель."}</p>`;
   return rows.map(row => {
     const status = !row.enabled ? ["Пауза", "neutral"] : row.running ? ["Загрузка", "info"] :
       row.error ? ["Ошибка", "attention"] : !row.next_at ? ["В очереди", "info"] :
@@ -99,15 +72,12 @@ async function refreshChannelRows() {
   const focused = document.activeElement;
   const row = focused?.closest("[data-channel-row]");
   $("channel-connections").innerHTML = renderChannelRows();
+  syncConnectedVisibility();
   if (row) $("channel-connections").querySelector(`[data-channel-row="${CSS.escape(row.dataset.channelRow)}"] [data-channel-state="${focused.dataset.channelState}"]:enabled`)?.focus();
 }
 
 function pollChannels() {
   clearTimeout(channelPollTimer);
-  if (location.hash === "#channels" && !channelAnchorOpened) {
-    channelAnchorOpened = true;
-    requestAnimationFrame(() => $("channels")?.scrollIntoView({block: "start"}));
-  }
   if (preview || !data.channel_connections?.length) return;
   channelPollTimer = setTimeout(async () => {
     if (!data || view !== "settings" || channelLoading) return;
@@ -121,14 +91,16 @@ function pollChannels() {
   }, 4000);
 }
 
-function channelForm(id) {
+function channelForm(id, serviceName) {
   channelProvider = id;
   const provider = providerFields[id];
-  $("channel-dialog-title").textContent = provider.name;
-  $("channel-help").textContent = provider.help + (preview ? " Подключение работает в локальном Pacto." : "");
+  const canConnect = !preview && canManageTeam();
+  $("channel-dialog-title").textContent = serviceName || provider.name;
+  $("channel-help").textContent = provider.help + (preview ? " Подключение работает в локальном Pacto." :
+    !canManageTeam() ? " Подключениями управляет руководитель." : "");
   $("channel-form-status").textContent = "";
-  $("channel-submit").hidden = preview;
-  $("channel-fields").innerHTML = preview ? "" : provider.fields.map(([name, label, type, initial, required = true], index) =>
+  $("channel-submit").hidden = !canConnect;
+  $("channel-fields").innerHTML = !canConnect ? "" : provider.fields.map(([name, label, type, initial, required = true], index) =>
     `<label for="channel-${name}">${label}</label><input id="channel-${name}" name="${name}" type="${type}" maxlength="8192"
       value="${esc(initial || "")}" autocomplete="${type === "password" ? "new-password" : "off"}" spellcheck="false"
       ${index ? "" : "autofocus aria-describedby=\"channel-help\""} ${required ? "required" : ""}>`).join("");
@@ -214,7 +186,7 @@ $("settings").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.hasAttribute("data-channel-demo")) openDemoHistory();
-  else if (button.dataset.channelProvider) channelForm(button.dataset.channelProvider);
+  else if (button.dataset.channelProvider) channelForm(button.dataset.channelProvider, button.dataset.serviceName);
   else if (button.id === "open-channel-pending") {
     $("channel-pending-content").innerHTML = "";
     $("channel-pending").showModal();

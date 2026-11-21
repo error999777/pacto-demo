@@ -19,29 +19,8 @@ let crmPollTimer;
 let crmPollPending = false;
 let crmExampleUrl;
 
-function renderCrmSection() {
-  const manage = !preview && canManageTeam();
-  return `<section aria-labelledby="crm-heading" class="settings-section crm-section">
-    <div class="settings-heading"><div><h2 id="crm-heading">Синхронизация с CRM</h2>
-      <p class="small muted">Pacto собирает досье из клиентов, сделок, задач и доступных звонков. Обновление каждые 15 минут.</p></div></div>
-    ${manage || preview ? `<div class="crm-provider-list" aria-label="Системы CRM">
-      ${Object.entries(crmProviders).map(([id, provider]) =>
-        `<button type="button" data-crm-provider="${id}">${provider.name}</button>`).join("")}
-    </div>` : ""}
-    <div class="connections" id="crm-connections">${crmConnectionRows()}</div>
-  </section>`;
-}
-
 function crmConnectionRows() {
-  if (preview) return `<div class="connection-row crm-entry">
-    <span class="source-symbol" aria-hidden="true">CRM</span>
-    <div class="crm-entry-info"><strong>Пример досье из CRM</strong>
-      <p class="small muted">Альфа Логистика · сделки, задачи и история общения</p></div>
-    <button type="button" data-crm-example>Открыть досье</button>
-  </div>`;
   const connections = data.crm_connections || [];
-  if (!connections.length) return `<p class="small muted">${canManageTeam()
-    ? "Выберите CRM, чтобы начать загрузку." : "CRM может подключить руководитель."}</p>`;
   return connections.map(item => {
     const waiting = !item.next_at;
     const status = !item.enabled ? ["Пауза", "neutral"] : item.running ? ["Загрузка", "info"] :
@@ -77,6 +56,7 @@ async function refreshCrmRows() {
   const focused = document.activeElement;
   const row = focused?.closest("[data-crm-row]");
   section.innerHTML = crmConnectionRows();
+  syncConnectedVisibility();
   if (row) section.querySelector(`[data-crm-row="${CSS.escape(row.dataset.crmRow)}"] [data-crm-action="${focused.dataset.crmAction}"]:enabled`)?.focus();
 }
 
@@ -100,7 +80,8 @@ function crmFormFields() {
   const provider = crmProviders[id];
   const bitrix = id === "bitrix24";
   const custom = id === "custom";
-  $("crm-help").textContent = provider.help + (preview ? " Реальное подключение доступно в локальном Pacto." : "");
+  $("crm-help").textContent = provider.help + (preview ? " Подключение доступно в локальном Pacto." :
+    !canManageTeam() ? " Подключениями управляет руководитель." : "");
   $("crm-address-label").textContent = bitrix ? "Адрес вебхука" : custom ? "Адрес JSON-выгрузки" : "Адрес аккаунта";
   $("crm-endpoint").type = bitrix ? "password" : "url";
   $("crm-endpoint").autocomplete = bitrix ? "new-password" : "url";
@@ -125,8 +106,8 @@ function showCrmForm(provider) {
   $("crm-form").reset();
   $("crm-form-status").textContent = "";
   $("crm-provider").value = provider;
-  $("crm-fields").hidden = preview;
-  $("crm-submit").hidden = preview;
+  $("crm-fields").hidden = preview || !canManageTeam();
+  $("crm-submit").hidden = preview || !canManageTeam();
   if (!crmExampleUrl) {
     const example = sourceExample("crm");
     const deal = example.deals[0];
@@ -142,10 +123,7 @@ function showCrmForm(provider) {
 $("settings").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
-  if (button.hasAttribute("data-crm-example")) {
-    view = "clients";
-    select("alpha", "alpha-sync");
-  } else if (button.dataset.crmProvider) {
+  if (button.dataset.crmProvider) {
     showCrmForm(button.dataset.crmProvider);
   } else if (button.dataset.crmAction) {
     const id = button.closest("[data-crm-row]").dataset.crmRow;

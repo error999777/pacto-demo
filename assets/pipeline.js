@@ -34,7 +34,7 @@ function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => entities[char]);
 }
 function entrance() {
-  if (["#settings", "#channels"].includes(location.hash)) return "settings";
+  if (location.hash === "#settings" || location.hash === "#channels" || location.hash.startsWith("#settings-")) return "settings";
   if (location.hash === "#team") return "team";
   if (location.hash === "#reminders") return "reminders";
   if (["#analytics", "#analytics-attention"].includes(location.hash)) return "results";

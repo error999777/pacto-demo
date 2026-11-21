@@ -3,8 +3,7 @@
 const sourceTypes = {
   crm: {name: "CRM", mark: "CRM", title: "CRM через адаптер", presets: ["Отправка JSON по API"],
     receives: "Сделки, этапы и задачи",
-    detail: "Выгрузите карточки и дела из CRM. Дайте каждому клиенту и сделке постоянный ID.",
-    docs: ["Документация Битрикс24", "https://apidocs.bitrix24.com/tutorials/crm/how-to-get-lists/index.html"]},
+    detail: "Выгрузите карточки и дела из CRM. Дайте каждому клиенту и сделке постоянный ID."},
   phone: {name: "Телефония", mark: "ТФ", title: "Телефония", presets: ["АТС / SIP", "Mango Office", "Asterisk"],
     receives: "Звонки и расшифровки",
     detail: "Передавайте завершённые звонки из АТС. Если есть только запись, подготовьте расшифровку перед отправкой."},
@@ -18,66 +17,103 @@ const sourceTypes = {
     receives: "Письма по сделкам",
     detail: "Передавайте сообщения из подключённого рабочего ящика. Сопоставляйте переписку по контакту и ID сделки в CRM."}
 };
-let sourceFilter = "all";
+const serviceCards = {
+  crm: [
+    ["crm", "bitrix24", "Битрикс24", "24", "Клиенты, сделки, задачи и звонки", "#67c8ff"],
+    ["crm", "amocrm", "amoCRM", "amo", "Контакты, воронка и история звонков", "#8db4ff"],
+    ["crm", "retailcrm", "RetailCRM", "R", "Клиенты, заказы и задачи", "#79e7c0"],
+    ["crm", "custom", "Самописная CRM", "{ }", "Загрузка из своей JSON-выгрузки", "#c6a8ff"]
+  ],
+  phone: [
+    ["channel", "zadarma", "Zadarma", "Z", "Звонки АТС и записи разговоров", "#70d6ff"],
+    ["channel", "channel_feed", "Другая АТС", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
+  ],
+  meeting: [
+    ["channel", "zoom", "Zoom", "zoom", "Облачные записи встреч и расшифровки", "#73a9ff"],
+    ["channel", "meet", "Google Meet", "M", "Записи из Google Drive и расшифровки", "#72e9bd"]
+  ],
+  chat: [
+    ["channel", "telegram", "Telegram", "T", "Сообщения и голосовые рабочего бота", "#68ceff"],
+    ["channel", "channel_feed", "WhatsApp Business", "WA", "Переписка через JSON-адаптер", "#7be6a5"]
+  ],
+  mail: [
+    ["source", "mail", "Почта через API", "@", "Письма из Gmail, Outlook или своего ящика через адаптер", "#f1ca99"]
+  ]
+};
+const categories = [["all", "Все"], ...Object.entries(sourceTypes).map(([id, type]) => [id, type.name])];
+const linkedCategory = location.hash.replace("#settings-", "");
+let sourceFilter = location.hash === "#channels" ? "meeting" :
+  categories.some(([id]) => id === linkedCategory) ? linkedCategory : "crm";
 let setupCategory = "crm";
 
+function renderServiceCard([mode, provider, name, mark, description, accent]) {
+  const action = !preview && (mode === "source" ? canEdit() : canManageTeam()) ? "Подключить" : "Как подключить";
+  const control = {crm: "data-crm-provider", channel: "data-channel-provider", source: "data-source-type"}[mode];
+  const heading = sourceFilter === "all" ? "h4" : "h3";
+  return `<article class="service-card" style="--service-accent: ${accent}">
+    <span class="service-mark" aria-hidden="true" translate="no">${mark}</span>
+    <div class="service-info">
+      <${heading} translate="no">${name}</${heading}>
+      <p>${description}</p>
+    </div>
+    <button class="service-action" type="button" ${control}="${provider}" data-service-name="${name}" aria-label="${action} ${name}">
+      ${action}<span aria-hidden="true"></span>
+    </button>
+  </article>`;
+}
+
+function renderServicePanel() {
+  const selected = sourceFilter === "all" ? categories.slice(1) : categories.filter(([id]) => id === sourceFilter);
+  return selected.map(([id, label]) => `<section class="service-group" aria-label="${label}">
+    ${sourceFilter === "all" ? `<h3>${label}</h3>` : ""}
+    <div class="service-grid">${serviceCards[id].map(renderServiceCard).join("")}</div>
+  </section>`).join("");
+}
+
+function syncConnectedVisibility() {
+  const crm = !!data.crm_connections?.length;
+  const channels = !!data.channel_connections?.length;
+  const manual = (data.sources || []).some(item => !item.automatic);
+  $("crm-connections").hidden = !crm;
+  $("channel-connections").hidden = !channels;
+  $("manual-connections").hidden = !manual;
+  $("active-connections").hidden = !crm && !channels && !manual;
+}
+
 function renderSettings() {
-  const automatic = new Set([...(data.crm_connections || []), ...(data.channel_connections || [])].map(item => item.id));
-  const sources = (data.sources || []).filter(item => !automatic.has(item.id));
-  const imported = data.calls.filter(call => !call.source_id).length;
-  const explainOpen = $("join-details")?.open ?? false;
-  const providerLinks = {
-    meeting: [["Google Meet: записи и расшифровки", "https://developers.google.com/workspace/meet/api/guides/artifacts"],
-      ["Zoom: записи встреч", "https://developers.zoom.us/docs/api/meetings/#tag/Cloud-Recording"]],
-    chat: [["Telegram: доступ бота к сообщениям", "https://core.telegram.org/bots/faq#what-messages-will-my-bot-get"]]
-  };
+  const sources = (data.sources || []).filter(item => !item.automatic);
+  const advancedOpen = $("manual-setup")?.open ?? false;
   $("settings").innerHTML = `
-    ${renderCrmSection()}
-    ${renderChannelSection()}
-    <section aria-labelledby="sources-heading" class="settings-section">
-      <div class="settings-heading">
-        <h2 id="sources-heading">Приём данных</h2>
-        ${!preview ? `<div class="actions">
-          ${sources.length ? '<button type="button" id="settings-refresh">Обновить статус</button>' : ""}
-          ${canEdit() ? '<button type="button" id="settings-import">Импортировать JSON</button>' : ""}
-        </div>` : ""}
+    <section class="connection-catalog" aria-labelledby="catalog-heading">
+      <header class="catalog-header">
+        <h2 id="catalog-heading">Подключения</h2>
+        ${preview || canManageTeam() ? '<button type="button" class="catalog-quiet" id="open-channel-pending">Без клиента</button>' : ""}
+      </header>
+      <div class="catalog-filters" role="group" aria-label="Категории подключений">
+        ${categories.map(([id, label]) => `<button type="button" data-source-filter="${id}" aria-pressed="${id === sourceFilter}"
+          aria-controls="services-panel">${label}</button>`).join("")}
       </div>
-        <div class="connections">
-          <div class="connection-row">
-            <span class="source-symbol" aria-hidden="true">↓</span>
-            <div><strong>Импорт JSON</strong><p class="muted small">${imported ? "Событий: " + imported : "Событий пока нет"}</p></div>
-          </div>
-          ${sources.length ? sources.map(renderConnection).join("") :
-            '<p class="small muted connection-empty">Ключи для отправки данных ещё не выпущены</p>'}
-        </div>
+      <div class="service-panel" id="services-panel">${renderServicePanel()}</div>
+      ${preview ? '<button type="button" class="catalog-quiet catalog-example" data-channel-demo>Открыть пример досье</button>' : ""}
     </section>
-    <section aria-labelledby="catalog-heading" class="settings-section">
-      <div class="settings-heading"><h2 id="catalog-heading">Добавить источник</h2></div>
-      <div class="filters settings-filters" aria-label="Категории источников">
-        ${[["all", "Все"], ...Object.entries(sourceTypes).map(([id, type]) => [id, type.name])].map(([id, name]) =>
-          `<button type="button" data-source-filter="${id}" aria-pressed="${id === sourceFilter}">${name}</button>`).join("")}
+    <section class="active-connections" id="active-connections" aria-labelledby="active-heading" hidden>
+      <header class="catalog-header"><h2 id="active-heading">Подключённые источники</h2>
+        ${sources.length ? '<button type="button" class="catalog-quiet" id="settings-refresh">Обновить статус</button>' : ""}
+      </header>
+      <div class="connections active-list">
+        <div id="crm-connections">${crmConnectionRows()}</div>
+        <div id="channel-connections">${renderChannelRows()}</div>
+        <div id="manual-connections">${sources.map(renderConnection).join("")}</div>
       </div>
-      <div class="catalog-grid">${Object.entries(sourceTypes).filter(([id]) => sourceFilter === "all" || id === sourceFilter)
-        .map(([id, type]) => `<article class="source-card" data-category="${id}">
-          <div class="source-card-title"><span class="source-symbol" aria-hidden="true">${type.mark}</span><h3>${type.title}</h3></div>
-          <p class="source-receives">${type.receives}</p>
-          <p class="muted small">${type.presets.join(" · ")}</p>
-          <div class="actions"><button type="button" data-source-type="${id}">${!preview && canEdit() ? "Настроить приём" : "Как подключить"}</button></div>
-          <details><summary class="small">Подробности</summary>
-            <p class="muted small">${type.detail}</p>
-            ${[...(type.docs ? [type.docs] : []), ...(providerLinks[id] || [])].map(([label, url]) =>
-              `<a class="small" href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`).join("")}
-          </details>
-        </article>`).join("")}</div>
     </section>
-    <details id="join-details" class="joining"${explainOpen ? " open" : ""}>
-      <summary>Как собирается досье</summary>
-      <ul>
-        <li><strong>CRM</strong> передаёт сделку, этап и задачи.</li>
-        <li><strong>Каналы общения</strong> дополняют историю по ID клиента или сделки.</li>
-        <li><strong>Текст</strong> нужен для разбора. Без него в досье виден только факт общения.</li>
-      </ul>
+    <details class="manual-setup" id="manual-setup"${advancedOpen ? " open" : ""}>
+      <summary>Ручной импорт и API</summary>
+      <div class="actions manual-actions">
+        ${!preview && canEdit() ? '<button type="button" id="settings-import">Импортировать JSON</button>' : ""}
+        ${Object.entries(sourceTypes).map(([id, type]) => `<button type="button" data-source-type="${id}">${type.name} через API</button>`).join("")}
+      </div>
     </details>`;
+  syncConnectedVisibility();
   pollCrm();
   pollChannels();
 }
@@ -145,8 +181,11 @@ function bindSettings() {
     if (!button) return;
     if (button.dataset.sourceFilter) {
       sourceFilter = button.dataset.sourceFilter;
-      renderSettings();
-      $("settings").querySelector('[aria-pressed="true"]').focus();
+      for (const filter of document.querySelectorAll("[data-source-filter]")) {
+        filter.setAttribute("aria-pressed", filter === button);
+      }
+      $("services-panel").innerHTML = renderServicePanel();
+      history.replaceState(null, "", "#settings-" + sourceFilter);
     } else if (button.dataset.sourceType) {
       showSourceSetup(button.dataset.sourceType);
     } else if (button.id === "settings-import") {

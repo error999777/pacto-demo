@@ -266,11 +266,11 @@ async function attachmentData(canvas) {
 
 function feedbackRow(item) {
   const image = item.has_image ? `<details class="feedback-inbox-image">
-      <summary>Показать изображение</summary>
+      <summary>Открыть вложение</summary>
       <img src="${preview ? "data:image/png;base64," + esc(item.image) : "/api/feedback/" + esc(item.id) + "/image"}"
         loading="lazy" alt="Изображение к обращению">
     </details>` : "";
-  return `<article class="feedback-entry">
+  return `<article class="feedback-entry work-panel">
     <div class="row-head"><strong>${esc(item.author_name)}</strong>
       <span class="tag status-chip" data-tone="${item.viewed_at ? "neutral" : "info"}">${item.viewed_at ? "Просмотрено" : "Новое"}</span></div>
     <p class="small muted">${esc(feedbackPages[item.page])} · ${esc(date(item.created_at))}</p>

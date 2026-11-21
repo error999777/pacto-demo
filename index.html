@@ -69,8 +69,9 @@
       </header>
       <div class="split pipeline" id="inbox">
         <section class="queue" aria-label="Список">
+          <h2 class="worklist-title" id="worklist-title">Очередь сделок</h2>
           <div id="list-tools">
-            <label for="search">Поиск по клиенту или сделке</label>
+            <label for="search">Клиент или сделка</label>
             <input id="search" name="search" type="search" autocomplete="off" placeholder="Например, Альфа…">
           </div>
           <div id="items" class="list"></div>
@@ -149,19 +150,21 @@
       <h2 id="feedback-title">Обратная связь</h2>
       <button type="button" class="quiet" id="close-feedback">Закрыть</button>
     </div>
-    <div class="filters feedback-tabs" id="feedback-tabs" role="group" aria-label="Разделы обратной связи" hidden>
+    <div class="feedback-tabs work-filters" id="feedback-tabs" role="group" aria-label="Разделы обратной связи" hidden>
       <button type="button" data-feedback-tab="write" aria-pressed="true">Написать</button>
       <button type="button" data-feedback-tab="inbox" aria-pressed="false">Входящие</button>
     </div>
     <form id="feedback-form" method="post" action="/api/feedback" aria-labelledby="feedback-title">
-      <p class="small muted" id="feedback-demo-hint" hidden>В демо используйте вымышленные данные. Обращение останется в этой вкладке.</p>
-      <label for="feedback-message">Что случилось или что улучшить</label>
-      <textarea id="feedback-message" name="message" maxlength="3000" rows="4" required></textarea>
-      <section class="feedback-attach" aria-labelledby="feedback-attach-title">
-        <h3 id="feedback-attach-title">Изображение <span class="small muted">необязательно</span></h3>
+      <p class="small muted" id="feedback-demo-hint" hidden>Это демо. Обращение сохранится в этой вкладке.</p>
+      <div class="feedback-text work-panel">
+        <label for="feedback-message">Сообщение</label>
+        <textarea id="feedback-message" name="message" maxlength="3000" rows="4" placeholder="Опишите, что случилось или что можно улучшить…" required></textarea>
+      </div>
+      <section class="feedback-attach work-panel" aria-labelledby="feedback-attach-title">
+        <div class="work-section-head"><h3 id="feedback-attach-title">Вложение</h3><span class="small muted">По желанию</span></div>
         <div class="actions">
-          <button type="button" id="feedback-pick">Прикрепить фото</button>
-          <button type="button" id="feedback-capture">Снимок экрана</button>
+          <button type="button" id="feedback-pick">Выбрать изображение</button>
+          <button type="button" id="feedback-capture">Сделать скриншот</button>
         </div>
         <input id="feedback-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Выбрать фото" hidden>
         <p class="small muted" id="feedback-capture-help" hidden>Захват экрана недоступен здесь. Приложите готовый скриншот.</p>
@@ -190,7 +193,7 @@
           </div>
         </div>
       </section>
-      <div class="actions feedback-send"><button class="primary" type="submit" id="feedback-send">Отправить</button></div>
+      <div class="actions feedback-send"><button class="primary" type="submit" id="feedback-send">Отправить обращение</button></div>
     </form>
     <section id="feedback-inbox" aria-label="Входящие обращения" hidden></section>
     <p id="feedback-status" class="small muted" role="status"></p>

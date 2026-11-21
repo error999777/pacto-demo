@@ -4,7 +4,36 @@
   --space-3: 1rem;
   --space-4: 1.4rem;
   --space-5: 2rem;
+  --work-edge: #3d5781;
+  --work-surface: #17243b;
+  --work-deep: #121d31;
+  --work-radius: .85rem;
 }
+.work-panel {
+  min-width: 0; padding: clamp(.8rem, 2.7cqi, 1.25rem);
+  border: 1px solid var(--work-edge); border-radius: var(--work-radius);
+  background: radial-gradient(ellipse at 12% 0%, #203453 0%, transparent 62%), var(--work-surface);
+  box-shadow: inset 0 1px #90b7ff1f;
+}
+.work-section-head { display: flex; gap: .55rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.work-count {
+  min-width: 1.55rem; padding: .08rem .4rem; border-radius: .35rem;
+  background: var(--work-deep); color: var(--tone, var(--blue)); text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums;
+}
+.work-filters {
+  display: flex; gap: .25rem; align-items: center; flex-wrap: wrap;
+  padding: .25rem; border: 1px solid #334867; border-radius: .65rem; background: var(--work-deep);
+}
+.work-filters button {
+  min-height: 2.55rem; padding: .35rem .65rem; border: 1px solid transparent;
+  background: transparent; color: var(--muted); font-size: .88rem;
+}
+.work-filters button:hover { color: var(--text); background: var(--surface); }
+.work-filters button[aria-pressed="true"] {
+  border-color: #5079b1; color: var(--text); background: var(--selected);
+  box-shadow: inset 0 -2px #9bbdff, 0 0 .8rem #5790ff25;
+}
+.work-empty > button { margin-top: .7rem; }
 .skip-link {
   position: absolute; z-index: 4; inset: .6rem auto auto .6rem;
   padding: .7rem 1rem; background: var(--primary); color: var(--primary-text);
@@ -40,6 +69,7 @@
 .pipeline .queue { padding: var(--space-3); }
 .pipeline .detail { overflow-wrap: anywhere; padding-block: var(--space-4) var(--space-5); }
 .pipeline .detail > * + * { margin-top: var(--space-3); }
+.worklist-title { margin: .1rem 0 .7rem; font-size: 1.03rem; }
 #list-tools { margin-bottom: var(--space-3); }
 #list-tools input { width: 100%; margin-top: var(--space-1); }
 .pipeline .deal { padding: .68rem .8rem; }
@@ -47,6 +77,16 @@
 .pipeline .deal strong { font-size: .98rem; }
 .pipeline .deal .row-meta { margin-top: var(--space-1); }
 .pipeline .deal .statusline { margin-top: .48rem; font-variant-numeric: tabular-nums; }
+.pipeline .work-item { display: grid; gap: .24rem; min-width: 0; overflow-wrap: anywhere; }
+.pipeline .work-item .work-item-title { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .55rem; }
+.client-list-item .work-item-title { justify-content: space-between; }
+.work-position {
+  min-width: 1.35rem; padding: .06rem .3rem; border-radius: .32rem;
+  background: var(--work-deep); color: var(--blue); text-align: center; font-size: .75rem; font-variant-numeric: tabular-nums;
+}
+.work-item-label { color: var(--muted); font-size: .9rem; }
+.work-last { margin-top: .2rem; padding-top: .35rem; border-top: 1px solid var(--border); }
+.dossier-head { display: grid; gap: .7rem; }
 .client-header h2 { font-size: clamp(1.3rem, 1rem + 1cqi, 1.65rem); }
 .client-deals { display: grid; gap: var(--space-1); }
 .project {
@@ -60,13 +100,12 @@
 .project > :first-child { flex: 1 1 12rem; min-width: 0; }
 .project-stage { display: block; }
 .mobile-project { display: none; }
-.dossier-nav, .scope { display: flex; flex-wrap: wrap; gap: .22rem; align-items: center; }
-.dossier-nav { border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
-.dossier-nav button, .scope button {
+.scope { display: flex; flex-wrap: wrap; gap: .22rem; align-items: center; }
+.scope button {
   background: transparent; border-color: transparent; color: var(--muted); min-height: 2.55rem; padding: .35rem .64rem;
 }
-.dossier-nav button:hover, .scope button:hover { background: var(--panel); color: var(--text); }
-.dossier-nav button[aria-pressed="true"], .scope button[aria-pressed="true"] {
+.scope button:hover { background: var(--panel); color: var(--text); }
+.scope button[aria-pressed="true"] {
   color: var(--text); background: var(--selected); box-shadow: inset 0 -2px var(--blue);
 }
 .scope button { font-size: .86rem; }
@@ -74,12 +113,16 @@
 .dossier-block, .task, .call-card {
   padding: .7rem .85rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--panel);
 }
+.dossier-block.work-panel { border-color: var(--work-edge); border-radius: var(--work-radius); background-color: var(--work-surface); }
 .dossier-block > summary { font-weight: 650; min-height: 1.6rem; }
 .dossier-block > :not(summary) { margin-top: .65rem; }
 .dossier-block > p { max-width: 68ch; }
 .deal-facts { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: .45rem; margin: .65rem 0; }
 .deal-facts dt { color: var(--muted); font-size: .79rem; }
 .deal-facts dd { margin: 0; }
+.deal-context { border-top: 1px solid var(--border); padding-block-start: .55rem; }
+.deal-context p { margin-top: .45rem; }
+.deal-context summary { color: var(--blue); min-height: 1.7rem; }
 .priority {
   padding: clamp(.85rem, 2.8cqi, 1.25rem);
   background: color-mix(in oklab, var(--tone) 12%, var(--panel));
@@ -88,6 +131,11 @@
 .priority > * + * { margin-top: var(--space-2); }
 .priority h3 { font-size: clamp(1.1rem, 1rem + .6cqi, 1.35rem); max-width: 55ch; }
 .priority-reason { color: var(--muted); }
+.action-caption { color: var(--tone); font-size: .83rem; font-weight: 650; }
+.priority-actions { display: flex; align-items: start; flex-wrap: wrap; gap: .35rem .65rem; }
+.priority-actions:not(:has(> :not([hidden]))) { display: none; }
+.priority-actions .record-form[open] { flex-basis: 100%; }
+.priority-actions .actions { margin: 0; }
 .priority-details {
   display: flex; align-items: start; flex-wrap: wrap; gap: .45rem 1.2rem;
   padding-top: .45rem; border-top: 1px solid var(--border);
@@ -102,6 +150,8 @@
 }
 .source-link:hover { background: transparent; color: var(--text); }
 .task-list, .call-list { display: grid; gap: .55rem; }
+.task-group .work-section-head { margin-bottom: .6rem; }
+.task, .call-card { background: var(--work-surface); border-color: #3b5072; }
 .row-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .22rem .7rem; }
 .task p + p, .task details, .call-card .tag { margin-top: .25rem; }
 .call-summary, .call-card details { margin-top: .35rem; }
@@ -151,4 +201,5 @@
   .status-chip, .demo-label { border: 1px solid CanvasText; }
   .dossier-nav button[aria-pressed="true"], .scope button[aria-pressed="true"] { border-color: Highlight; }
   .priority { border-inline-start-color: Highlight; }
+  .work-filters button[aria-pressed="true"] { border-color: Highlight; }
 }

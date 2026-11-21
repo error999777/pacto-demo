@@ -107,11 +107,12 @@ function renderReminders(focused = document.activeElement) {
   const items = [...data.reminders].sort((a, b) => Date.parse(a.remind_at) - Date.parse(b.remind_at));
   const now = Date.now();
   const groups = [
-    ["due", "Пора выполнить", items.filter(item => Date.parse(item.remind_at) <= now)],
+    ["due", "Срок наступил", items.filter(item => Date.parse(item.remind_at) <= now)],
     ["planned", "Запланированы", items.filter(item => Date.parse(item.remind_at) > now)]
   ];
-  section.innerHTML = groups.map(([id, label, rows]) => rows.length ? `<section aria-labelledby="reminders-${id}">
-    <h2 id="reminders-${id}">${label}</h2>
+  section.innerHTML = groups.map(([id, label, rows]) => rows.length ? `<section class="reminder-group work-panel"
+    data-tone="${id === "due" ? "attention" : "info"}" aria-labelledby="reminders-${id}">
+    <div class="work-section-head"><h2 id="reminders-${id}">${label}</h2><span class="work-count">${rows.length}</span></div>
     <ul class="reminder-list" role="list">${rows.map(item => {
       const context = reminderTarget(item);
       const deal = context?.deal || entity(data.deals, item.deal_id);
@@ -125,12 +126,12 @@ function renderReminders(focused = document.activeElement) {
         </div>
         <div class="reminder-actions">
           <button type="button" data-reminder-action="snooze" aria-label="Отложить на час">+1 час</button>
-          <button type="button" data-reminder-action="schedule">Выбрать время</button>
-          <button type="button" class="quiet" data-reminder-action="dismiss">Снять</button>
+          <button type="button" data-reminder-action="schedule">Перенести</button>
+          <button type="button" class="quiet" data-reminder-action="dismiss" aria-label="Снять напоминание">Снять</button>
         </div>
       </li>`;
     }).join("")}</ul>
-  </section>` : "").join("") || '<p class="empty">Напоминаний пока нет. Чтобы добавить, нажмите «Напомнить» в карточке задачи или следующего шага.</p>';
+  </section>` : "").join("") || '<p class="empty work-panel">Напоминаний пока нет. Их можно поставить в карточке задачи или следующего шага.</p>';
   if (focusRow) {
     const row = section.querySelector(`[data-reminder-row="${CSS.escape(focusRow.dataset.reminderRow)}"]`);
     const button = row?.querySelector(`[data-reminder-action="${focused.dataset.reminderAction}"]`);

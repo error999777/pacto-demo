@@ -17,10 +17,8 @@
 .feedback-dialog #feedback-message { width: 100%; margin-top: .35rem; }
 .feedback-dialog #feedback-status:empty { margin: 0; }
 .feedback-dialog label { margin-top: .65rem; }
-.feedback-attach {
-  margin-top: .75rem; padding: .72rem .8rem;
-  background: var(--panel); border: 1px solid var(--border); border-radius: .6rem;
-}
+.feedback-text, .feedback-attach { margin-top: .75rem; padding: .72rem .8rem; }
+.feedback-text label { margin-top: 0; font-size: .95rem; font-weight: 650; }
 .feedback-attach .actions { margin-top: .55rem; }
 .feedback-image {
   position: relative; display: inline-block; vertical-align: top;
@@ -37,8 +35,9 @@
 .feedback-coordinates input { margin-top: .25rem; }
 .feedback-dialog[data-capturing] { opacity: 0; }
 .feedback-dialog[data-capturing]::backdrop { background: transparent; }
-.feedback-send { margin-top: .7rem; }
-.feedback-entry { padding: .7rem 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.feedback-send { margin-top: .7rem; justify-content: flex-end; }
+#feedback-inbox { display: grid; gap: .65rem; margin-top: .65rem; }
+.feedback-entry { overflow-wrap: anywhere; }
 .feedback-entry .feedback-entry-message { white-space: pre-wrap; margin-block: .5rem; }
 .feedback-entry p { margin-top: .3rem; }
 .feedback-entry img { display: block; max-width: 100%; max-height: 50vh; width: auto; height: auto; margin-top: .45rem; object-fit: contain; }

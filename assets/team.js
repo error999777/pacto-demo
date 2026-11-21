@@ -7,7 +7,7 @@ const teamStates = {
   ready: ["Готов к входу", "info"]
 };
 const teamFilters = [
-  ["all", "Все"], ["active", "Активны"], ["invited", "Ждут входа"], ["blocked", "Доступ закрыт"],
+  ["all", "Все"], ["active", "Активные"], ["invited", "Ждут входа"], ["blocked", "Без доступа"],
 ];
 let teamStatus = "all";
 let teamQuery = "";
@@ -49,21 +49,21 @@ function teamOptions(values, selected) {
 function renderTeam() {
   const total = teamRows().length;
   $("team").innerHTML = `
-    <div class="team-heading">
-      <div><h2>Сотрудники</h2><p class="small muted">${numberFormat.format(total)} в команде</p></div>
-      ${canManageTeam() ? '<button class="primary" type="button" data-team-add>Добавить сотрудника</button>' : ""}
-    </div>
-    <section class="team-panel" aria-label="Список сотрудников">
+    <section class="team-panel" aria-labelledby="roster-title">
+      <div class="team-heading work-panel">
+        <div class="work-section-head"><h2 id="roster-title">Сотрудники</h2><span class="work-count">${numberFormat.format(total)}</span></div>
+        ${canManageTeam() ? '<button class="primary" type="button" data-team-add>Добавить сотрудника</button>' : ""}
+      </div>
       <div class="team-filters">
-        <div class="team-statuses" role="group" aria-label="Фильтр по доступу">
+        <div class="team-statuses work-filters" role="group" aria-label="Фильтр по доступу">
           ${teamFilters.map(([key, label]) => `<button type="button" data-team-status="${key}"
             aria-pressed="${key === teamStatus}">${label}
             <span class="item-count">${teamRows().filter(row => statusMatches(row, key)).length}</span></button>`).join("")}
         </div>
         <div class="team-criteria">
-          <label>Поиск<input id="team-search" type="search" name="member_search" autocomplete="off"
+          <label>Сотрудник или отдел<input id="team-search" type="search" name="member_search" autocomplete="off"
             placeholder="Имя или отдел…" value="${esc(teamQuery)}"></label>
-          <label>Роль<select id="team-role" name="role_filter">
+          <label>Роль в Pacto<select id="team-role" name="role_filter">
             ${teamOptions([["all", "Все роли"], ...Object.entries(teamRoles)], teamRole)}
           </select></label>
           ${!preview ? '<button type="button" data-team-refresh>Обновить</button>' : ""}
@@ -82,7 +82,7 @@ function renderTeamTable() {
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
   $("team-table").innerHTML = people.length ? `<table class="team-table" role="table" aria-label="Сотрудники и доступ">
     <thead role="rowgroup"><tr role="row"><th scope="col">Сотрудник</th><th scope="col">Роль и отдел</th>
-     <th scope="col">Доступ</th><th scope="col">Последний вход</th><th scope="col">Профиль</th></tr></thead>
+     <th scope="col">Доступ</th><th scope="col">Последний вход</th><th scope="col">Действия</th></tr></thead>
     <tbody role="rowgroup">${people.map(member => `<tr role="row">
       <th scope="row" role="rowheader"><div class="team-person">
         <span class="team-avatar" data-role="${member.role}" aria-hidden="true">${esc(memberInitials(member.name))}</span>
@@ -92,7 +92,7 @@ function renderTeamTable() {
       <td role="cell"><span class="team-cell-label">Роль и отдел</span><strong>${teamRoles[member.role]}</strong><small>${esc(member.department)}</small></td>
       <td role="cell"><span class="team-cell-label">Доступ</span>${memberBadge(member)}</td>
       <td role="cell"><span class="team-cell-label">Последний вход</span><span class="small muted">${member.last_login_at ? esc(date(member.last_login_at)) : "Ещё не входил"}</span></td>
-      <td role="cell"><button type="button" data-team-member="${esc(member.id)}" aria-label="Открыть профиль: ${esc(member.name)}">Открыть</button></td>
+      <td role="cell"><button type="button" data-team-member="${esc(member.id)}" aria-label="Профиль сотрудника ${esc(member.name)}">Профиль</button></td>
     </tr>`).join("")}</tbody></table>` : '<div class="team-empty"><p>Сотрудники не найдены.</p><button type="button" data-team-reset>Сбросить фильтры</button></div>';
 }
 
@@ -110,11 +110,11 @@ function renderMemberDialog(member = null) {
   $("team-dialog-message").textContent = "";
   $("team-dialog-body").innerHTML = `
     <form id="team-form" method="post" action="/api/team" aria-labelledby="team-dialog-title">
-      <div class="team-dialog-head"><div><h2 id="team-dialog-title">${member ? "Профиль сотрудника" : "Новый сотрудник"}</h2>
-        ${member ? `<p class="small muted">${esc(member.name)}</p>` : ""}</div>
+      <div class="team-dialog-head"><h2 id="team-dialog-title">${member ? esc(member.name) : "Новый сотрудник"}</h2>
         ${member ? memberBadge(member) : ""}</div>
       ${preview ? '<p class="small muted">Используйте вымышленное имя.</p>' : ""}
       <fieldset ${readOnly ? "disabled" : ""}>
+        <legend>Профиль</legend>
         <label for="team-name">Имя и фамилия</label>
         <input id="team-name" name="name" maxlength="160" value="${esc(member?.name)}" required
           autocomplete="off" ${readOnly ? "" : "autofocus"}>
@@ -124,14 +124,14 @@ function renderMemberDialog(member = null) {
         <datalist id="team-department-options">${departments.map(name => `<option value="${esc(name)}"></option>`).join("")}</datalist>
         <label for="team-position">Должность <span class="muted">(необязательно)</span></label>
         <input id="team-position" name="position" maxlength="160" value="${esc(member?.position)}" autocomplete="off">
-        <label for="team-access-role">Роль доступа</label>
+        <label for="team-access-role">Роль в Pacto</label>
         <select id="team-access-role" name="role" ${fixedRole ? "disabled" : ""} aria-describedby="team-role-description">
           ${teamOptions(Object.entries(teamRoles), member?.role || "manager")}
         </select>
         <p id="team-role-description" class="small muted"></p>
       </fieldset>
       <div class="actions team-dialog-actions">
-        ${!readOnly ? `<button class="primary" type="submit">${member ? "Сохранить профиль" : "Создать и выдать код"}</button>` : ""}
+        ${!readOnly ? `<button class="primary" type="submit">${member ? "Сохранить профиль" : "Добавить и выдать код"}</button>` : ""}
         <button type="button" data-team-close ${readOnly ? "autofocus" : ""}>Закрыть</button>
       </div>
     </form>

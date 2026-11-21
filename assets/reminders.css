@@ -8,7 +8,8 @@
   padding: var(--space-4) clamp(1rem, 3.5cqi, 2rem) var(--space-5);
   overflow-wrap: anywhere;
 }
-.reminders h2 { margin-bottom: var(--space-2); }
+.reminder-group .work-section-head { margin-bottom: var(--space-2); }
+.reminder-group[data-tone="attention"] { border-color: #756247; }
 .reminder-list { display: grid; gap: .5rem; list-style: none; margin: 0; padding: 0; }
 .reminder-row {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem 1rem;

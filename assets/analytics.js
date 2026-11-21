@@ -1,6 +1,8 @@
 "use strict";
 
-const analyticsState = {scope: "all", person: "", days: 7, day: ""};
+const analyticsSections = [["overview", "Обзор"], ["sales", "Продажи"], ["workload", "Команда и каналы"], ["reviews", "Разборы"]];
+const analyticsState = {scope: "all", person: "", days: 7, day: "",
+  section: analyticsSections.find(([key]) => location.hash === "#analytics-" + key)?.[0] || "overview"};
 const analyticsDate = new Intl.DateTimeFormat("ru-RU", {dateStyle: "medium", timeZone: "Europe/Minsk"});
 const analyticsDay = new Intl.DateTimeFormat("en-CA", {year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Minsk"});
 const analyticsPercent = new Intl.NumberFormat("ru-RU", {style: "percent", maximumFractionDigits: 1});
@@ -183,7 +185,7 @@ function activityChart(m, now) {
   const limit = step * 3;
   return `<section class="analytics-card analytics-activity" aria-labelledby="activity-title">
     <div class="analytics-card-head">
-      <div><h2 id="activity-title">Динамика работы</h2><p class="small muted">По полученным событиям</p></div>
+      <h2 id="activity-title">Активность по дням</h2>
       <div class="analytics-segment" role="group" aria-label="Период графика">
         ${[7, 14].map(days => analyticsButton(days + " дней", "data-days", days, days === analyticsState.days)).join("")}
       </div>
@@ -216,7 +218,7 @@ function taskChart(m) {
     offset += count / total * 100;
     return `var(--chart-${tone}) ${start}% ${offset}%`;
   }).join(",") : "var(--border) 0% 100%";
-  return card("Состояния задач", `
+  return card("Задачи по статусам", `
     <div class="task-chart">
       <div class="analytics-ring" style="--ring:conic-gradient(${stops})" aria-hidden="true">
         <div><strong class="numeric">${number(total)}</strong><span>задач</span></div>
@@ -236,34 +238,34 @@ function metricsCatalog(m) {
   const r = m.review;
   const editCount = [...r.edits.values()].reduce((sum, count) => sum + count, 0);
   return [
-    ["Распознано обязательств", number(m.promises.length), "Задачи с цитатой"],
-    ["Подтверждено человеком", number(r.confirmed.length), `Из черновиков модели: ${r.acceptedModel.length}`],
+    ["Договорённости с цитатой", number(m.promises.length)],
+    ["Подтвердил менеджер", number(r.confirmed.length), `Из черновиков модели: ${r.acceptedModel.length}`],
     ["Черновики ждут проверки", number(r.drafts.length)],
     ["Отклонено", number(r.rejected.length), "Решения менеджера по черновикам"],
-    ["Сторона определена", number(m.promises.length), "Менеджер или клиент"],
-    ["Создано задач", number(m.tasks.length)],
+    ["Известен ответственный", number(m.promises.length), "Менеджер или клиент"],
+    ["Всего задач", number(m.tasks.length)],
     ["Задачи не начаты", number(m.notStarted)],
     ["Задачи в работе", number(m.inProgress)],
     ["Задачи отменены", number(m.cancelled)],
-    ["События с текстом без разбора", number(m.pendingReview)],
-    ["Задачи с ID в CRM", number(m.crm)],
+    ["Записи с текстом без разбора", number(m.pendingReview)],
+    ["Задачи в CRM", number(m.crm)],
     ["Выполнено в CRM", number(m.crmDone), "Статус задач с ID в CRM"],
-    ["Закрыто", number(m.done.length)],
-    ["Закрыто в срок", number(m.timed ? m.onTime : null)],
-    ["Закрыто без срока", number(m.withoutDeadline)],
+    ["Выполнено задач", number(m.done.length)],
+    ["Выполнено в срок", number(m.timed ? m.onTime : null)],
+    ["Выполнено без срока", number(m.withoutDeadline)],
     ["Выполнено без времени закрытия", number(m.withoutCompletionTime)],
     ["Доля закрытых в срок", percent(m.onTimeShare), `Замеров: ${number(m.timed)}`],
     ["Обязательства с истёкшим сроком", number(m.overdue.length)],
     ["Черновики с истёкшим сроком", number(r.overdueDrafts)],
     ["Доля подтверждённых", percent(proportion(r.acceptedModel.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
     ["Доля отклонённых", percent(proportion(r.rejected.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
-    ["Доля замкнутого контура", percent(proportion(r.closedLoop, r.invites)), `${r.closedLoop} подтверждено и выполнено вовремя из ${r.invites} приглашений в журнале`],
+    ["Приглашения подтверждены и отправлены в срок", percent(proportion(r.closedLoop, r.invites)), `${r.closedLoop} из ${r.invites} приглашений в журнале`],
     ["Подтверждено без правок", percent(proportion(r.unchanged, r.acceptedModel.length)), `Из ${r.acceptedModel.length} подтверждённых черновиков модели`],
-    ["Разборы в один клик", percent(proportion(r.unchanged, r.candidates)), "Из всех черновиков модели"],
-    ["Ручные правки по полям", number(editCount)],
+    ["Принято без правок из всех черновиков", percent(proportion(r.unchanged, r.candidates))],
+    ["Всего правок", number(editCount)],
     ...[...r.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", number(count)]),
-    ["Текст → карточка", duration(r.processing.median), latencyNote(r.processing, "Нет успешных запусков модели")],
-    ["Запись → карточка", duration(r.recording.median), latencyNote(r.recording, "Источник ещё не передал время приёма записи")],
+    ["От текста до черновика", duration(r.processing.median), latencyNote(r.processing, "Нет успешных запусков модели")],
+    ["От приёма записи до черновика", duration(r.recording.median), latencyNote(r.recording, "Источник ещё не передал время приёма записи")],
     ["Ошибки обработки", number(r.failed)],
     ["События с автором", number(r.reviews.length), "Подтверждения и отклонения"],
     ["События системы", number(r.systemEvents), "Запуски модели"]
@@ -273,11 +275,11 @@ function metricsCatalog(m) {
 function salesMetrics(m) {
   return [
     ["Звонки", number(m.countCalls)], ["Встречи из источников", number(m.meetings)],
-    ["Выиграно", number(m.won.length)], ["Закрыто сделок", number(m.closed.length)],
-    ["Конверсия в победу", percent(m.conversion), `${m.won.length} выиграно из ${m.closed.length} закрытых`],
+    ["Выигранные сделки", number(m.won.length)], ["Закрытые сделки", number(m.closed.length)],
+    ["Доля выигранных", percent(m.conversion), `${m.won.length} из ${m.closed.length} закрытых`],
     ["Сумма выигранных сделок", [...m.revenue].map(([code, value]) => money(value, code)).join(" · ") || "—",
       `Сумма известна для ${m.wonWithAmount} из ${m.won.length}`],
-    ["Начало работы над задачей", minutes(m.meanStart), `Среднее от назначения до старта · замеров: ${m.accepted}`],
+    ["От назначения задачи до старта", minutes(m.meanStart), `Среднее по замерам: ${m.accepted}`],
     ["Отправили приглашение", number(m.invited)], ["Провели встречу по сигналу", number(m.held)],
     ["Согласован следующий шаг", percent(m.nextStepShare), `Разобрано событий: ${m.analyzed.length}`],
     ["Уточнена потребность клиента", percent(m.needShare), `Оценено разговоров: ${m.qualityCount}`],
@@ -353,68 +355,55 @@ function renderResults() {
   const delayed = m.overdue.filter(task => task.delay_reason);
   const reasons = new Map();
   for (const task of delayed) reasons.set(task.delay_reason, (reasons.get(task.delay_reason) || 0) + 1);
-  const stagesRows = Object.entries(stages).map(([stage, title]) => [title, tally(m.deals, deal => deal.stage === stage), "blue"]);
+  const stageCounts = new Map();
+  for (const deal of m.deals) {
+    const label = dealStage(deal);
+    stageCounts.set(label, (stageCounts.get(label) || 0) + 1);
+  }
+  const stagesRows = [...stageCounts].map(([label, count]) => [label, count, "blue"]);
   const promiseRows = [
     ["Найдено по репликам", m.promises.length, "blue"], ["Связано с CRM", m.crm, "cyan"],
     ["Выполнено", m.done.length, "mint"]
   ];
-  $("results").innerHTML = `<div class="analytics-toolbar">
+  const sales = salesMetrics(m);
+  $("results").innerHTML = `<div class="analytics-toolbar work-panel">
     <div class="analytics-toolbar-left">
       <div class="analytics-segment" role="group" aria-label="Разрез аналитики">
-        ${analyticsButton("Общая", "data-analytics-scope", "all", analyticsState.scope === "all")}
-        ${people.length ? analyticsButton("По сотрудникам", "data-analytics-scope", "person", Boolean(person)) : ""}
+        ${analyticsButton("Вся команда", "data-analytics-scope", "all", analyticsState.scope === "all")}
+        ${people.length ? analyticsButton("По сотруднику", "data-analytics-scope", "person", Boolean(person)) : ""}
       </div>
       ${person ? `<label class="analytics-person" for="analytics-person">Ответственный
         <select id="analytics-person" name="employee">${people.map(name =>
           `<option${name === person ? " selected" : ""}>${esc(name)}</option>`).join("")}</select></label>` : ""}
     </div>
     <div class="analytics-toolbar-right">
-      <span class="small muted">Срез ${esc(date(now))}</span>
+      <span class="small muted">Данные на ${esc(date(now))}</span>
       ${!preview ? '<button type="button" data-analytics-refresh>Обновить</button>' : ""}
       ${hasData ? '<button type="button" data-analytics-download>Скачать CSV</button>' : ""}
     </div>
   </div>
-  ${!hasData ? '<p class="analytics-card empty">Пока нет данных. Загрузите сделки или историю общения.</p>' : `
+  ${!hasData ? '<p class="analytics-card empty">Загрузите сделки или историю общения, чтобы увидеть отчёты.</p>' : `
+    <div class="analytics-tabs work-filters" role="group" aria-label="Отчёты">
+      ${analyticsSections.map(([key, label]) => analyticsButton(label, "data-analytics-section", key, key === analyticsState.section)).join("")}
+    </div>
+    ${analyticsState.section === "overview" ? `
     <section class="analytics-section analytics-entry" aria-labelledby="overview-metrics">
-      <h2 id="overview-metrics">Обещания и сроки</h2>
+      <h2 id="overview-metrics">Задачи и сроки</h2>
       <div class="analytics-kpis">
         ${keyMetric("Просрочено", number(overdue), "Открытые задачи", "attention", "analytics-attention")}
-        ${keyMetric("Ждут проверки", number(m.review.drafts.length), `Без черновика: ${m.pendingReview - m.review.drafts.length}`, "info")}
+        ${keyMetric("Черновики на проверке", number(m.review.drafts.length), `Записей без черновика: ${m.pendingReview - m.review.drafts.length}`, "info")}
         ${keyMetric("В работе", number(m.inProgress), `Не начаты: ${number(m.notStarted)}`, "neutral")}
         ${keyMetric("Выполнено", number(m.done.length), `В CRM: ${number(m.crmDone)}`, "success")}
-        ${keyMetric("Выполнено в срок", percent(m.onTimeShare), m.timed ? `${m.onTime} из ${m.timed} с замером` : "Нет замеров", "success")}
+        ${keyMetric("Выполнено в срок", percent(m.onTimeShare), m.timed ? `${m.onTime} из ${m.timed} с известным сроком` : "Нет задач с замером", "success")}
       </div>
     </section>
     <div class="analytics-graph-grid analytics-entry">
       ${activityChart(m, now)}
       ${taskChart(m)}
     </div>
-    <div class="analytics-equal-grid analytics-entry">
-      ${card("Продажи и качество", metricRows(salesMetrics(m).slice(0, 8)) +
-        '<details class="analytics-fold"><summary class="small">Качество общения и встречи</summary>' + metricRows(salesMetrics(m).slice(8)) + '</details>')}
-      ${card("Сделки по этапам", barRows(stagesRows, "Текущие этапы сделок") +
-        '<details class="analytics-fold"><summary class="small">Как продвигаются задачи</summary>' + barRows(promiseRows, "Текущие показатели задач") + '</details>')}
-    </div>
-    <div class="analytics-equal-grid analytics-entry">
-      ${card("Нагрузка по сотрудникам", workloadRows(person ? [person] : people, data, now))}
-      ${card("Источники общения", barRows(sourceRows(m.calls), "Полученные события по каналам") +
-        (m.calls.length ? '<details class="analytics-fold"><summary class="small">По подключённым источникам</summary>' + sourceDetails(m.calls) + '</details>' : ""))}
-    </div>
-    <div class="analytics-equal-grid analytics-entry">
-      ${card("Проверка разборов", metricRows([
-        ["Подтверждено", number(m.review.confirmed.length)], ["Отклонено", number(m.review.rejected.length)],
-        ["Подтверждено без правок", percent(proportion(m.review.unchanged, m.review.acceptedModel.length))],
-      ]) + (m.review.edits.size ? '<details class="analytics-fold"><summary>Что исправляли</summary>' +
-        barRows([...m.review.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", count, "purple"]), "Изменённые поля") + '</details>' : ""))}
-      ${card("Скорость обработки", metricRows([
-        ["Текст → карточка", duration(m.review.processing.median), latencyNote(m.review.processing, "Нет успешных запусков модели")],
-        ["Запись → карточка", duration(m.review.recording.median), latencyNote(m.review.recording, "Нет времени приёма записи от источника")],
-        ["Ошибки", number(m.review.failed)]
-      ]))}
-    </div>
     <section class="analytics-card analytics-entry" id="analytics-attention" aria-labelledby="attention-title">
-      <div class="analytics-card-head"><h2 id="attention-title">Требуют внимания</h2>
-        <span class="tag status-chip" data-tone="attention">${number(m.signalCount)} сделок с сигналом</span></div>
+      <div class="analytics-card-head"><h2 id="attention-title">Просроченные задачи</h2>
+        ${m.signalCount ? `<span class="tag status-chip" data-tone="attention">${countWithNoun(m.signalCount, "сделка в очереди", "сделки в очереди", "сделок в очереди")}</span>` : ""}</div>
       ${overdue ? `<div class="analytics-drill">${m.overdue.map(task => `<div class="report-row">
         <button type="button" class="source-link" data-report-deal="${esc(task.deal.id)}" data-report-call="${esc(task.call_id || "")}">${esc(task.title)}</button>
         <span class="small muted">До ${esc(date(task.due))}</span>
@@ -424,8 +413,39 @@ function renderResults() {
         ${overdue > delayed.length ? `<p class="small muted">Без причины: ${number(overdue - delayed.length)}</p>` : ""}
       </details>
     </section>
-    ${detailsBlock("Договорённости и сделки", drillRows(m.deals, m.promises))}
-    ${detailsBlock("Все показатели и методика", '<p class="small muted">Срез по загруженным данным. Разрез по сотруднику учитывает сделки, за которые он сейчас отвечает. Период меняет только график. Действия на графике включают отметки по сделкам и датированные события задач.</p>' + metricRows(metricsCatalog(m)))}
+    ` : ""}
+    ${analyticsState.section === "sales" ? `
+      <div class="analytics-equal-grid analytics-entry">
+        ${card("Результаты продаж", metricRows(sales.slice(2, 6)))}
+        ${card("Сделки по этапам", stagesRows.length ? barRows(stagesRows, "Текущие этапы сделок") : '<p class="small muted">Сделок пока нет.</p>')}
+        ${card("Звонки и встречи", metricRows([...sales.slice(0, 2), ...sales.slice(7, 9)]))}
+        ${card("Качество общения", metricRows(sales.slice(9)))}
+      </div>
+      ${detailsBlock("Договорённости и сделки", drillRows(m.deals, m.promises))}
+    ` : ""}
+    ${analyticsState.section === "workload" ? `
+      <div class="analytics-equal-grid analytics-entry">
+        ${card("Нагрузка сотрудников", workloadRows(person ? [person] : people, data, now))}
+        ${card("Каналы общения", barRows(sourceRows(m.calls), "События по каналам") +
+          (m.calls.length ? '<details class="analytics-fold"><summary class="small">По источникам</summary>' + sourceDetails(m.calls) + '</details>' : ""))}
+        ${card("От договорённости до задачи", barRows(promiseRows, "Состояние задач") + metricRows([sales[6]]))}
+      </div>
+    ` : ""}
+    ${analyticsState.section === "reviews" ? `
+      <div class="analytics-equal-grid analytics-entry">
+        ${card("Решения менеджеров", metricRows([
+          ["Подтверждено", number(m.review.confirmed.length)], ["Отклонено", number(m.review.rejected.length)],
+          ["Подтверждено без правок", percent(proportion(m.review.unchanged, m.review.acceptedModel.length))],
+        ]) + (m.review.edits.size ? '<details class="analytics-fold"><summary>Что исправляли</summary>' +
+          barRows([...m.review.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", count, "purple"]), "Изменённые поля") + '</details>' : ""))}
+        ${card("Скорость подготовки", metricRows([
+          ["От текста до черновика", duration(m.review.processing.median), latencyNote(m.review.processing, "Нет успешных запусков модели")],
+          ["От приёма записи до черновика", duration(m.review.recording.median), latencyNote(m.review.recording, "Нет времени приёма записи от источника")],
+          ["Ошибки", number(m.review.failed)]
+        ]))}
+      </div>
+    ` : ""}
+    ${detailsBlock("Все метрики и расчёт", '<p class="small muted">Отчёт учитывает загруженные данные. Фильтр по сотруднику показывает сделки, закреплённые за ним сейчас. Период меняет только график активности.</p>' + metricRows(metricsCatalog(m)))}
   `}`;
 }
 
@@ -452,7 +472,12 @@ function exportAnalytics() {
 $("results").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
-  if (button.dataset.days) {
+  if (button.dataset.analyticsSection) {
+    analyticsState.section = button.dataset.analyticsSection;
+    history.replaceState(null, "", "#analytics-" + analyticsState.section);
+    renderResults();
+    $("results").querySelector("[data-analytics-section][aria-pressed=true]").focus();
+  } else if (button.dataset.days) {
     analyticsState.days = Number(button.dataset.days);
     analyticsState.day = "";
     renderResults();

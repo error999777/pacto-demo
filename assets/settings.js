@@ -19,9 +19,9 @@ const sourceTypes = {
 };
 const serviceCards = {
   crm: [
-    ["crm", "bitrix24", "Битрикс24", "24", "Клиенты, сделки, задачи и звонки", "#67c8ff"],
-    ["crm", "amocrm", "amoCRM", "amo", "Контакты, воронка и история звонков", "#8db4ff"],
-    ["crm", "retailcrm", "RetailCRM", "R", "Клиенты, заказы и задачи", "#79e7c0"],
+    ["crm", "bitrix24", "Битрикс24", "bitrix24.png", "Клиенты, сделки, задачи и звонки", "#67c8ff"],
+    ["crm", "amocrm", "amoCRM", "amocrm.png", "Контакты, воронка и история звонков", "#8db4ff"],
+    ["crm", "retailcrm", "RetailCRM", "retailcrm.png", "Клиенты, заказы и задачи", "#79e7c0"],
     ["crm", "custom", "Самописная CRM", "{ }", "Загрузка из своей JSON-выгрузки", "#c6a8ff"]
   ],
   phone: [
@@ -29,11 +29,11 @@ const serviceCards = {
     ["channel", "channel_feed", "Другая АТС", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
   ],
   meeting: [
-    ["channel", "zoom", "Zoom", "zoom", "Облачные записи встреч и расшифровки", "#73a9ff"],
-    ["channel", "meet", "Google Meet", "M", "Записи из Google Drive и расшифровки", "#72e9bd"]
+    ["channel", "zoom", "Zoom", "zoom.png", "Облачные записи встреч и расшифровки", "#73a9ff"],
+    ["channel", "meet", "Google Meet", "google-meet.png", "Записи из Google Drive и расшифровки", "#72e9bd"]
   ],
   chat: [
-    ["channel", "telegram", "Telegram", "T", "Сообщения и голосовые рабочего бота", "#68ceff"],
+    ["channel", "telegram", "Telegram", "telegram.png", "Сообщения и голосовые рабочего бота", "#68ceff"],
     ["channel", "channel_feed", "WhatsApp Business", "WA", "Переписка через JSON-адаптер", "#7be6a5"]
   ],
   mail: [
@@ -50,8 +50,10 @@ function renderServiceCard([mode, provider, name, mark, description, accent]) {
   const action = !preview && (mode === "source" ? canEdit() : canManageTeam()) ? "Подключить" : "Как подключить";
   const control = {crm: "data-crm-provider", channel: "data-channel-provider", source: "data-source-type"}[mode];
   const heading = sourceFilter === "all" ? "h4" : "h3";
+  const logo = mark.endsWith(".png");
   return `<article class="service-card" style="--service-accent: ${accent}">
-    <span class="service-mark" aria-hidden="true" translate="no">${mark}</span>
+    <span class="service-mark${logo ? " service-logo" : ""}" aria-hidden="true" translate="no">${logo ?
+      `<img src="assets/brands/${mark}" width="34" height="34" alt="">` : mark}</span>
     <div class="service-info">
       <${heading} translate="no">${name}</${heading}>
       <p>${description}</p>

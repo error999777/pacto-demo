@@ -1,7 +1,7 @@
 "use strict";
 
 const sourceTypes = {
-  crm: {name: "CRM", mark: "CRM", title: "CRM и сделки", presets: ["Битрикс24", "amoCRM", "Самописная CRM"],
+  crm: {name: "CRM", mark: "CRM", title: "CRM через адаптер", presets: ["Отправка JSON по API"],
     receives: "Сделки, этапы и задачи",
     detail: "Выгрузите карточки и дела из CRM. Дайте каждому клиенту и сделке постоянный ID.",
     docs: ["Документация Битрикс24", "https://apidocs.bitrix24.com/tutorials/crm/how-to-get-lists/index.html"]},
@@ -22,7 +22,8 @@ let sourceFilter = "all";
 let setupCategory = "crm";
 
 function renderSettings() {
-  const sources = data.sources || [];
+  const automatic = new Set((data.crm_connections || []).map(item => item.id));
+  const sources = (data.sources || []).filter(item => !automatic.has(item.id));
   const imported = data.calls.filter(call => !call.source_id).length;
   const explainOpen = $("join-details")?.open ?? false;
   const providerLinks = {
@@ -31,6 +32,7 @@ function renderSettings() {
     chat: [["Telegram: доступ бота к сообщениям", "https://core.telegram.org/bots/faq#what-messages-will-my-bot-get"]]
   };
   $("settings").innerHTML = `
+    ${renderCrmSection()}
     <section aria-labelledby="sources-heading" class="settings-section">
       <div class="settings-heading">
         <h2 id="sources-heading">Приём данных</h2>
@@ -45,7 +47,7 @@ function renderSettings() {
             <div><strong>Импорт JSON</strong><p class="muted small">${imported ? "Событий: " + imported : "Событий пока нет"}</p></div>
           </div>
           ${sources.length ? sources.map(renderConnection).join("") :
-            '<p class="small muted connection-empty">Источники API ещё не настроены</p>'}
+            '<p class="small muted connection-empty">Ключи для отправки данных ещё не выпущены</p>'}
         </div>
     </section>
     <section aria-labelledby="catalog-heading" class="settings-section">
@@ -75,6 +77,7 @@ function renderSettings() {
         <li><strong>Текст</strong> нужен для разбора. Без него в досье виден только факт общения.</li>
       </ul>
     </details>`;
+  pollCrm();
 }
 
 function renderConnection(source) {

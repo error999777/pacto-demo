@@ -58,6 +58,21 @@
 .credential-field { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .35rem; }
 .credential-field input { flex: 1 1 11rem; margin: 0; }
 .history-coverage { margin-block-end: .1rem; }
+.crm-section .settings-heading p { margin-top: .28rem; }
+.crm-provider-list { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .7rem; }
+.crm-provider-list button { padding: .38rem .65rem; }
+.crm-entry { align-items: flex-start; }
+.crm-entry-info { flex: 1 1 15rem; min-width: 0; }
+.crm-entry-info p { margin-top: .22rem; }
+.crm-entry-info strong { margin-inline-end: .4rem; }
+.crm-entry .tag { white-space: normal; }
+.crm-error { color: var(--warm); }
+.crm-dialog .editor { display: block; }
+.crm-dialog select { width: 100%; }
+.crm-dialog input, .crm-dialog select { margin-top: .3rem; }
+.crm-dialog .crm-local-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: .6rem; }
+.crm-dialog .actions { justify-content: flex-end; }
+.crm-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
 @container (min-width: 54rem) {
   .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

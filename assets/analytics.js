@@ -11,7 +11,6 @@ const number = value => value == null ? "—" : analyticsNumber.format(value);
 const proportion = (part, whole) => whole > 0 ? part / whole : null;
 const percent = value => value == null ? "—" : analyticsPercent.format(value);
 const minutes = value => value == null ? "—" : number(value) + " мин";
-const currency = value => value == null ? "—" : money(value);
 const tally = (rows, test) => rows.filter(test).length;
 const auditFieldLabels = {
   summary: "Итог разговора", result: "Результат", opportunity: "Следующий шаг",
@@ -83,7 +82,11 @@ function summarizeAnalytics(deals, calls, queue, now, activity) {
     onTime, timed: timed.length, onTimeShare: proportion(onTime, timed.length),
     accepted: started.length, meanStart,
     conversion: proportion(won.length, closed.length),
-    revenue: wonWithAmount.length ? wonWithAmount.reduce((sum, deal) => sum + deal.amount, 0) : null,
+    revenue: wonWithAmount.reduce((totals, deal) => {
+      const code = deal.currency || "BYN";
+      totals.set(code, (totals.get(code) || 0) + deal.amount);
+      return totals;
+    }, new Map()),
     wonWithAmount: wonWithAmount.length,
     invited: tally(deals, deal => deal.actions.some(action => action.kind === "invited")),
     held: tally(deals, deal => deal.actions.some(action => action.kind === "meeting_held")),
@@ -272,7 +275,8 @@ function salesMetrics(m) {
     ["Звонки", number(m.countCalls)], ["Встречи из источников", number(m.meetings)],
     ["Выиграно", number(m.won.length)], ["Закрыто сделок", number(m.closed.length)],
     ["Конверсия в победу", percent(m.conversion), `${m.won.length} выиграно из ${m.closed.length} закрытых`],
-    ["Сумма выигранных сделок", currency(m.revenue), `Сумма известна для ${m.wonWithAmount} из ${m.won.length}`],
+    ["Сумма выигранных сделок", [...m.revenue].map(([code, value]) => money(value, code)).join(" · ") || "—",
+      `Сумма известна для ${m.wonWithAmount} из ${m.won.length}`],
     ["Начало работы над задачей", minutes(m.meanStart), `Среднее от назначения до старта · замеров: ${m.accepted}`],
     ["Отправили приглашение", number(m.invited)], ["Провели встречу по сигналу", number(m.held)],
     ["Согласован следующий шаг", percent(m.nextStepShare), `Разобрано событий: ${m.analyzed.length}`],
@@ -324,7 +328,7 @@ function drillRows(deals, tasks = []) {
       <span class="small muted">${taskLabels[task.status]}</span></div>`).join("")}</div>` : "";
   return taskList + `<div class="analytics-drill">${deals.map(deal => `<div class="report-row">
     <div><button type="button" class="source-link" data-report-deal="${esc(deal.id)}">${esc(deal.title)}</button>
-      <p class="small muted">${esc(entity(data.clients, deal.client_id)?.name)} · ${stages[deal.stage]}</p></div>
+      <p class="small muted">${esc(entity(data.clients, deal.client_id)?.name)} · ${esc(dealStage(deal))}</p></div>
     <span class="tag status-chip" data-tone="${deal.result === "won" ? "success" : "neutral"}">${dealResults[deal.result]}</span>
   </div>`).join("") || '<p class="empty">Сделок пока нет.</p>'}</div>`;
 }

@@ -25,7 +25,7 @@ const serviceCards = {
     ["crm", "custom", "Самописная CRM", "{ }", "Загрузка из своей JSON-выгрузки", "#c6a8ff"]
   ],
   phone: [
-    ["channel", "zadarma", "Zadarma", "Z", "Звонки АТС и записи разговоров", "#70d6ff"],
+    ["channel", "zadarma", "Zadarma", "zadarma.png", "Звонки АТС и записи разговоров", "#70d6ff"],
     ["channel", "channel_feed", "Другая АТС", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
   ],
   meeting: [
@@ -34,7 +34,7 @@ const serviceCards = {
   ],
   chat: [
     ["channel", "telegram", "Telegram", "telegram.png", "Сообщения и голосовые рабочего бота", "#68ceff"],
-    ["channel", "channel_feed", "WhatsApp Business", "WA", "Переписка через JSON-адаптер", "#7be6a5"]
+    ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5"]
   ],
   mail: [
     ["source", "mail", "Почта через API", "@", "Письма из Gmail, Outlook или своего ящика через адаптер", "#f1ca99"]

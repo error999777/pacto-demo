@@ -37,7 +37,9 @@ const serviceCards = {
     ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5"]
   ],
   mail: [
-    ["source", "mail", "Почта через API", "@", "Письма из Gmail, Outlook или своего ящика через адаптер", "#f1ca99"]
+    ["source", "mail", "Gmail", "gmail.png", "Письма из Gmail через адаптер", "#ff9b83"],
+    ["source", "mail", "Outlook", "outlook.png", "Письма из Outlook через адаптер", "#78bdff"],
+    ["source", "mail", "Своя почта через API", "@", "Письма из вашего ящика через JSON API", "#f1ca99"]
   ]
 };
 const categories = [["all", "Все"], ...Object.entries(sourceTypes).map(([id, type]) => [id, type.name])];
@@ -135,19 +137,20 @@ function renderConnection(source) {
   </div>`;
 }
 
-function showSourceSetup(category) {
+function showSourceSetup(category, serviceName = "") {
   setupCategory = category;
   const type = sourceTypes[category];
-  $("source-title").textContent = type.title;
+  $("source-title").textContent = serviceName || type.title;
   $("source-description").textContent = type.detail;
   $("source-scope").textContent = type.receives;
   $("source-mode").textContent = preview ? "Ключ для адаптера выдаёт локальная версия Pacto." :
     "Укажите адрес и ключ Pacto в адаптере сервиса.";
   $("source-description").closest("details").open = false;
   $("source-form").hidden = preview || !canEdit();
+  $("source-presets").hidden = !!serviceName;
   $("source-presets").innerHTML = type.presets.map(name =>
     `<button type="button" data-preset="${name}">${name}</button>`).join("");
-  $("source-name").value = "";
+  $("source-name").value = type.presets.includes(serviceName) ? serviceName : "";
   $("source-error").textContent = "";
   $("source-dialog").showModal();
 }
@@ -189,7 +192,7 @@ function bindSettings() {
       $("services-panel").innerHTML = renderServicePanel();
       history.replaceState(null, "", "#settings-" + sourceFilter);
     } else if (button.dataset.sourceType) {
-      showSourceSetup(button.dataset.sourceType);
+      showSourceSetup(button.dataset.sourceType, button.dataset.serviceName);
     } else if (button.id === "settings-import") {
       $("open-import").click();
     } else if (button.id === "settings-refresh") {

@@ -73,6 +73,26 @@
 .crm-dialog .crm-local-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: .6rem; }
 .crm-dialog .actions { justify-content: flex-end; }
 .crm-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
+.channel-section .settings-heading p { margin-top: .28rem; }
+.channel-section .settings-heading { align-items: center; }
+.channel-dialog ::placeholder { color: var(--muted); }
+.channel-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
+.channel-dialog a { display: inline-block; margin-top: .4rem; }
+.channel-dialog select { display: block; width: 100%; margin-top: .3rem; }
+.channel-dialog .actions { flex-wrap: wrap; }
+.channel-dialog .row-head { align-items: center; }
+.pending-dialog > .row-head {
+  position: sticky; inset-block-start: 0; z-index: 1;
+  background: var(--surface); box-shadow: 0 -1.4rem 0 var(--surface);
+}
+.pending-events { display: grid; gap: .45rem; margin-block: .6rem; }
+.pending-event { padding: .56rem .65rem; min-width: 0; }
+.pending-event p { margin: .25rem 0; }
+.pending-event .row-head button { min-height: 2.45rem; }
+.pending-event .small { overflow-wrap: anywhere; }
+.recording-playback { margin-block: .55rem; }
+.recording-playback :is(audio, video) { width: min(100%, 32rem); margin-block: .3rem; }
+.recording-playback video { max-height: 24rem; }
 @container (min-width: 54rem) {
   .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

@@ -19,6 +19,7 @@
   <script defer src="assets/feedback.js"></script>
   <script defer src="assets/reminders.js"></script>
   <script defer src="assets/crm.js"></script>
+  <script defer src="assets/channels.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -247,6 +248,27 @@
         <button type="submit" id="crm-submit" class="primary">Подключить и загрузить</button>
       </div>
     </form>
+  </dialog>
+  <dialog class="settings-dialog channel-dialog" id="channel-dialog" aria-labelledby="channel-dialog-title">
+    <h2 id="channel-dialog-title">Подключить канал</h2>
+    <p id="channel-help" class="small muted"></p>
+    <a id="channel-doc" class="small" target="_blank" rel="noopener noreferrer"></a>
+    <form id="channel-form">
+      <div id="channel-fields"></div>
+      <p id="channel-form-status" class="small crm-error" role="status"></p>
+      <div class="actions">
+        <button type="button" class="quiet" id="channel-close">Закрыть</button>
+        <button type="submit" id="channel-submit" class="primary">Подключить</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="settings-dialog channel-dialog pending-dialog" id="channel-pending" aria-labelledby="channel-pending-title">
+    <div class="row-head">
+      <h2 id="channel-pending-title">Без клиента</h2>
+      <button type="button" class="quiet" id="channel-pending-close">Закрыть</button>
+    </div>
+    <div id="channel-pending-content"></div>
+    <p id="channel-pending-status" class="small crm-error" role="status"></p>
   </dialog>
 </body>
 </html>

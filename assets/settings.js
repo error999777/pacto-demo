@@ -22,7 +22,7 @@ let sourceFilter = "all";
 let setupCategory = "crm";
 
 function renderSettings() {
-  const automatic = new Set((data.crm_connections || []).map(item => item.id));
+  const automatic = new Set([...(data.crm_connections || []), ...(data.channel_connections || [])].map(item => item.id));
   const sources = (data.sources || []).filter(item => !automatic.has(item.id));
   const imported = data.calls.filter(call => !call.source_id).length;
   const explainOpen = $("join-details")?.open ?? false;
@@ -33,6 +33,7 @@ function renderSettings() {
   };
   $("settings").innerHTML = `
     ${renderCrmSection()}
+    ${renderChannelSection()}
     <section aria-labelledby="sources-heading" class="settings-section">
       <div class="settings-heading">
         <h2 id="sources-heading">Приём данных</h2>
@@ -78,6 +79,7 @@ function renderSettings() {
       </ul>
     </details>`;
   pollCrm();
+  pollChannels();
 }
 
 function renderConnection(source) {

@@ -34,7 +34,7 @@ function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => entities[char]);
 }
 function entrance() {
-  if (location.hash === "#settings") return "settings";
+  if (["#settings", "#channels"].includes(location.hash)) return "settings";
   if (location.hash === "#team") return "team";
   if (location.hash === "#reminders") return "reminders";
   if (["#analytics", "#analytics-attention"].includes(location.hash)) return "results";
@@ -123,7 +123,8 @@ function setView(next) {
   $("main").dataset.open = "false";
   render();
   $("title").focus();
-  if (!preview && ["queue", "clients", "results"].includes(next) && data.crm_connections?.length) run(null, refresh);
+  if (!preview && ["queue", "clients", "results"].includes(next) &&
+      (data.crm_connections?.length || data.channel_connections?.length)) run(null, refresh);
 }
 
 function select(client, deal, call) {
@@ -334,8 +335,12 @@ function renderTasks(tasks, showProject) {
 
 function renderHistory(calls) {
   const withText = calls.filter(call => call.lines.length).length;
+  const channelRefresh = !preview && data.channel_connections?.length;
   return `<section class="call-list" aria-label="История общения">
-    ${calls.length ? `<p class="small muted history-coverage">Текст доступен для ${withText} из ${calls.length} событий</p>` : ""}
+    ${calls.length || channelRefresh ? `<div class="row-head">
+      <p class="small muted history-coverage">${calls.length ? `Текст доступен для ${withText} из ${calls.length} событий` : ""}</p>
+      ${channelRefresh ? '<button class="quiet small" type="button" data-refresh-history>Обновить историю</button>' : ""}
+    </div>` : ""}
     ${calls.map(renderCall).join("") || '<p class="empty">Событий пока нет.</p>'}</section>`;
 }
 
@@ -420,6 +425,7 @@ function renderCall(call) {
     <p class="small muted">${esc(source?.name || "Импорт JSON")} · ${esc(deal?.title || "Без привязки к сделке")}${call.duration_seconds == null
       ? "" : ` · ${numberFormat.format(call.duration_seconds)} с`}</p>
     <span class="tag status-chip" data-tone="${result === "advanced" ? "success" : draft || ["blocked", "no_step"].includes(result) ? "attention" : "neutral"}">${decision || callResults[result] || (call.lines.length ? "Без разбора" : "Текст не получен")}</span>
+    ${renderRecording(call.id, data.channel_media?.[call.id])}
     ${call.analysis ? `<p class="call-summary">${esc(call.analysis.summary)}</p>` : ""}
     ${review ? `<p class="small muted">Проверил(а) ${esc(review.author)}</p>` : ""}
     ${call.lines.length ? `<details id="call-${esc(call.id)}">
@@ -536,6 +542,11 @@ $("detail").addEventListener("click", event => {
     $("detail").querySelector('.scope [aria-pressed="true"]').focus();
   } else if (button.dataset.source) {
     openCall(button.dataset.source, button.dataset.line);
+  } else if (button.hasAttribute("data-refresh-history")) {
+    run(button, async () => {
+      await refresh();
+      $("detail").querySelector("[data-refresh-history]")?.focus();
+    });
   } else if (button.hasAttribute("data-load-demo")) {
     run(button, loadDemo);
   } else if (button.dataset.previewStep && preview) {

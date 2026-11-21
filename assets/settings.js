@@ -36,7 +36,8 @@ const serviceCards = {
   ],
   chat: [
     ["channel", "telegram", "Telegram", "telegram.png", "Сообщения и голосовые рабочего бота", "#68ceff"],
-    ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5"]
+    ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5"],
+    ["channel", "channel_feed", "Свой мессенджер через API", "{ }", "Сообщения через свой JSON-адаптер", "#c6a8ff"]
   ],
   mail: [
     ["source", "mail", "Gmail", "gmail.png", "Письма из Gmail через адаптер", "#ff9b83"],

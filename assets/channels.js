@@ -20,7 +20,7 @@ const providerFields = {
     docs: "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"},
   channel_feed: {name: "JSON-адаптер", type: "Адаптер", fields: [
     ["endpoint", "Адрес JSON-выгрузки", "url"], ["key", "Bearer-токен (если нужен)", "password", "", false]
-  ], help: "Укажите GET-адрес адаптера телефонии, WhatsApp Business или другого канала. Формат можно скачать."}
+  ], help: "Укажите GET-адрес адаптера, из которого Pacto будет получать сообщения. Пример JSON можно скачать."}
 };
 const recordStates = {queued: "Запись в очереди", speaking: "Расшифровка готовится", ready: "Расшифровка готова",
   retry: "Повторная обработка", model: "Нужна модель Whisper", silent: "Речь не обнаружена"};

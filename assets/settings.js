@@ -26,7 +26,9 @@ const serviceCards = {
   ],
   phone: [
     ["channel", "zadarma", "Zadarma", "zadarma.png", "Звонки АТС и записи разговоров", "#70d6ff"],
-    ["channel", "channel_feed", "Другая АТС", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
+    ["channel", "channel_feed", "MANGO OFFICE", "mango-office.png", "Звонки и записи облачной АТС через адаптер", "#8de4a9"],
+    ["channel", "channel_feed", "Asterisk", "asterisk.png", "Звонки и записи Asterisk через адаптер", "#ffc178"],
+    ["channel", "channel_feed", "Своя АТС через API", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
   ],
   meeting: [
     ["channel", "zoom", "Zoom", "zoom.png", "Облачные записи встреч и расшифровки", "#73a9ff"],
@@ -48,7 +50,7 @@ let sourceFilter = location.hash === "#channels" ? "meeting" :
   categories.some(([id]) => id === linkedCategory) ? linkedCategory : "crm";
 let setupCategory = "crm";
 
-function renderServiceCard([mode, provider, name, mark, description, accent]) {
+function renderServiceCard([mode, provider, name, mark, description, accent], category) {
   const action = !preview && (mode === "source" ? canEdit() : canManageTeam()) ? "Подключить" : "Как подключить";
   const control = {crm: "data-crm-provider", channel: "data-channel-provider", source: "data-source-type"}[mode];
   const heading = sourceFilter === "all" ? "h4" : "h3";
@@ -60,7 +62,8 @@ function renderServiceCard([mode, provider, name, mark, description, accent]) {
       <${heading} translate="no">${name}</${heading}>
       <p>${description}</p>
     </div>
-    <button class="service-action" type="button" ${control}="${provider}" data-service-name="${name}" aria-label="${action} ${name}">
+    <button class="service-action" type="button" ${control}="${provider}" data-service-name="${name}"
+      data-service-category="${category}" aria-label="${action} ${name}">
       ${action}<span aria-hidden="true"></span>
     </button>
   </article>`;
@@ -70,7 +73,7 @@ function renderServicePanel() {
   const selected = sourceFilter === "all" ? categories.slice(1) : categories.filter(([id]) => id === sourceFilter);
   return selected.map(([id, label]) => `<section class="service-group" aria-label="${label}">
     ${sourceFilter === "all" ? `<h3>${label}</h3>` : ""}
-    <div class="service-grid">${serviceCards[id].map(renderServiceCard).join("")}</div>
+    <div class="service-grid">${serviceCards[id].map(card => renderServiceCard(card, id)).join("")}</div>
   </section>`).join("");
 }
 

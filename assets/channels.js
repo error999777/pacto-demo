@@ -27,7 +27,7 @@ const recordStates = {queued: "Запись в очереди", speaking: "Ра�
 let channelProvider;
 let channelPollTimer;
 let channelLoading = false;
-let channelExampleUrl;
+const channelExampleUrls = new Map();
 let queueRows = [];
 let queueNext;
 let linkEvent;
@@ -91,12 +91,14 @@ function pollChannels() {
   }, 4000);
 }
 
-function channelForm(id, serviceName) {
+function channelForm(id, serviceName, category) {
   channelProvider = id;
   const provider = providerFields[id];
+  const phoneFeed = id === "channel_feed" && category === "phone";
+  const help = phoneFeed ? "Укажите GET-адрес адаптера, который выгружает звонки и записи АТС. Формат можно скачать." : provider.help;
   const canConnect = !preview && canManageTeam();
   $("channel-dialog-title").textContent = serviceName || provider.name;
-  $("channel-help").textContent = provider.help + (preview ? " Подключение работает в локальном Pacto." :
+  $("channel-help").textContent = help + (preview ? " Подключение работает в локальном Pacto." :
     !canManageTeam() ? " Подключениями управляет руководитель." : "");
   $("channel-form-status").textContent = "";
   $("channel-submit").hidden = !canConnect;
@@ -110,13 +112,17 @@ function channelForm(id, serviceName) {
     doc.textContent = "Документация подключения";
     doc.removeAttribute("download");
   } else {
-    if (!channelExampleUrl) {
-      const example = {events: [{external_id: "sample-1", at: "2026-11-21T09:00:00+03:00", channel: "message",
-        title: "Переписка по заявке", identities: ["chat:sample-client"],
-        lines: [{id: "r1", speaker: "client", text: "Можно уточнить сроки поставки?"}]}]};
-      channelExampleUrl = URL.createObjectURL(new Blob([JSON.stringify(example, null, 2)], {type: "application/json"}));
+    const channel = phoneFeed ? "call" : "message";
+    if (!channelExampleUrls.has(channel)) {
+      const fields = phoneFeed
+        ? {title: "Звонок по заявке", identities: ["phone:70000000000"], recording: "/recordings/sample-1.wav"}
+        : {title: "Переписка по заявке", identities: ["chat:sample-client"],
+          lines: [{id: "r1", speaker: "client", text: "Можно уточнить сроки поставки?"}]};
+      const example = {events: [{external_id: "sample-1", at: "2026-11-21T09:00:00+03:00", channel, ...fields}]};
+      const blob = new Blob([JSON.stringify(example, null, 2)], {type: "application/json"});
+      channelExampleUrls.set(channel, URL.createObjectURL(blob));
     }
-    doc.href = channelExampleUrl;
+    doc.href = channelExampleUrls.get(channel);
     doc.textContent = "Скачать пример JSON";
     doc.download = "pacto-channel-example.json";
   }
@@ -186,7 +192,7 @@ $("settings").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.hasAttribute("data-channel-demo")) openDemoHistory();
-  else if (button.dataset.channelProvider) channelForm(button.dataset.channelProvider, button.dataset.serviceName);
+  else if (button.dataset.channelProvider) channelForm(button.dataset.channelProvider, button.dataset.serviceName, button.dataset.serviceCategory);
   else if (button.id === "open-channel-pending") {
     $("channel-pending-content").innerHTML = "";
     $("channel-pending").showModal();

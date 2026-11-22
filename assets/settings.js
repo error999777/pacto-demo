@@ -32,7 +32,8 @@ const serviceCards = {
   ],
   meeting: [
     ["channel", "zoom", "Zoom", "zoom.png", "Облачные записи встреч и расшифровки", "#73a9ff"],
-    ["channel", "meet", "Google Meet", "google-meet.png", "Записи из Google Drive и расшифровки", "#72e9bd"]
+    ["channel", "meet", "Google Meet", "google-meet.png", "Записи из Google Drive и расшифровки", "#72e9bd"],
+    ["channel", "channel_feed", "Свой сервис видеовстреч через API", "{ }", "Встречи, записи и расшифровки через адаптер", "#c6a8ff"]
   ],
   chat: [
     ["channel", "telegram", "Telegram", "telegram.png", "Сообщения и голосовые рабочего бота", "#68ceff"],

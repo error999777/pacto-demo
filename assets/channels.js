@@ -20,7 +20,23 @@ const providerFields = {
     docs: "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"},
   channel_feed: {name: "JSON-адаптер", type: "Адаптер", fields: [
     ["endpoint", "Адрес JSON-выгрузки", "url"], ["key", "Bearer-токен (если нужен)", "password", "", false]
-  ], help: "Укажите GET-адрес адаптера, из которого Pacto будет получать сообщения. Пример JSON можно скачать."}
+  ]}
+};
+const channelFeeds = {
+  phone: {
+    help: "Укажите GET-адрес адаптера, который выгружает звонки и записи АТС. Формат можно скачать.",
+    event: {channel: "call", title: "Звонок по заявке", identities: ["phone:70000000000"], recording: "/recordings/sample-1.wav"}
+  },
+  meeting: {
+    help: "Укажите GET-адрес адаптера, который выгружает сведения о встречах, записи и доступные расшифровки. Пример JSON можно скачать.",
+    event: {channel: "meeting", title: "Видеовстреча по заявке", identities: ["meeting:sample-1"], recording: "/recordings/sample-meeting.mp4",
+      lines: [{id: "r1", speaker: "client", text: "На следующей встрече обсудим сроки поставки."}]}
+  },
+  chat: {
+    help: "Укажите GET-адрес адаптера, из которого Pacto будет получать сообщения. Пример JSON можно скачать.",
+    event: {channel: "message", title: "Переписка по заявке", identities: ["chat:sample-client"],
+      lines: [{id: "r1", speaker: "client", text: "Можно уточнить сроки поставки?"}]}
+  }
 };
 const recordStates = {queued: "Запись в очереди", speaking: "Расшифровка готовится", ready: "Расшифровка готова",
   retry: "Повторная обработка", model: "Нужна модель Whisper", silent: "Речь не обнаружена"};
@@ -94,8 +110,8 @@ function pollChannels() {
 function channelForm(id, serviceName, category) {
   channelProvider = id;
   const provider = providerFields[id];
-  const phoneFeed = id === "channel_feed" && category === "phone";
-  const help = phoneFeed ? "Укажите GET-адрес адаптера, который выгружает звонки и записи АТС. Формат можно скачать." : provider.help;
+  const feed = id === "channel_feed" ? (channelFeeds[category] ?? channelFeeds.chat) : null;
+  const help = feed?.help ?? provider.help;
   const canConnect = !preview && canManageTeam();
   $("channel-dialog-title").textContent = serviceName || provider.name;
   $("channel-help").textContent = help + (preview ? " Подключение работает в локальном Pacto." :
@@ -107,24 +123,21 @@ function channelForm(id, serviceName, category) {
       value="${esc(initial || "")}" autocomplete="${type === "password" ? "new-password" : "off"}" spellcheck="false"
       ${index ? "" : "autofocus aria-describedby=\"channel-help\""} ${required ? "required" : ""}>`).join("");
   const doc = $("channel-doc");
-  if (provider.docs) {
-    doc.href = provider.docs;
-    doc.textContent = "Документация подключения";
-    doc.removeAttribute("download");
-  } else {
-    const channel = phoneFeed ? "call" : "message";
+  if (feed) {
+    const {event} = feed;
+    const {channel} = event;
     if (!channelExampleUrls.has(channel)) {
-      const fields = phoneFeed
-        ? {title: "Звонок по заявке", identities: ["phone:70000000000"], recording: "/recordings/sample-1.wav"}
-        : {title: "Переписка по заявке", identities: ["chat:sample-client"],
-          lines: [{id: "r1", speaker: "client", text: "Можно уточнить сроки поставки?"}]};
-      const example = {events: [{external_id: "sample-1", at: "2026-11-21T09:00:00+03:00", channel, ...fields}]};
+      const example = {events: [{external_id: "sample-1", at: "2026-11-21T09:00:00+03:00", ...event}]};
       const blob = new Blob([JSON.stringify(example, null, 2)], {type: "application/json"});
       channelExampleUrls.set(channel, URL.createObjectURL(blob));
     }
     doc.href = channelExampleUrls.get(channel);
     doc.textContent = "Скачать пример JSON";
     doc.download = "pacto-channel-example.json";
+  } else {
+    doc.href = provider.docs;
+    doc.textContent = "Документация подключения";
+    doc.removeAttribute("download");
   }
   $("channel-dialog").showModal();
 }

@@ -120,6 +120,25 @@
 .deal-facts { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: .45rem; margin: .65rem 0; }
 .deal-facts dt { color: var(--muted); font-size: .79rem; }
 .deal-facts dd { margin: 0; }
+.brief-scope { font-size: 1.03rem; line-height: 1.5; }
+.brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: .9rem 1.25rem; padding-block: .9rem; border-block: 1px solid var(--border); }
+.brief-grid dt, .contact-body h4 { color: var(--blue); font-weight: 650; font-size: .9rem; }
+.brief-grid dd { margin: .25rem 0 0; }
+.brief-agreements { padding: 0; list-style: none; }
+.brief-agreements li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
+.contact-entry > summary { position: relative; list-style: none; padding-inline-end: 1.5rem; }
+.contact-entry > summary::-webkit-details-marker { display: none; }
+.contact-entry > summary::after { content: ""; position: absolute; right: .25rem; top: .5rem; width: .5rem; height: .5rem; border: solid var(--blue); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.contact-entry[open] > summary::after { transform: rotate(225deg); }
+.contact-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .75rem; color: var(--text); }
+.contact-meta { display: block; margin-block: .2rem; }
+.contact-body { display: grid; gap: .85rem; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border); }
+.contact-body h4, .contact-body p { margin: 0 0 .2rem; }
+.contact-body blockquote { margin: .35rem 0; padding-inline-start: .65rem; border-inline-start: 2px solid var(--blue); }
+.promise { border-inline-start: 2px solid var(--control); padding: .3rem .7rem; margin: .4rem 0; }
+.contact-body .recording-playback { margin: 0; }
+.contact-body .recording-playback :is(audio, video) { display: block; max-width: 100%; }
+.contact-body .recording-playback video { height: auto; }
 .deal-context { border-top: 1px solid var(--border); padding-block-start: .55rem; }
 .deal-context p { margin-top: .45rem; }
 .deal-context summary { color: var(--blue); min-height: 1.7rem; }

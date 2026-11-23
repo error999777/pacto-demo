@@ -72,10 +72,12 @@ function renderRecording(id, recording) {
   if (!recording) return "";
   const status = recordStates[recording.state];
   const tag = recording.mime?.startsWith("video/") ? "video" : "audio";
-  const url = "/api/channels/events/" + encodeURIComponent(id) + "/recording";
+  const demoAudio = preview && recording.demo;
+  const url = demoAudio ? "assets/demo-audio/" + encodeURIComponent(id) + ".wav" : "/api/channels/events/" + encodeURIComponent(id) + "/recording";
   return `<div class="recording-playback">
     ${status ? `<p class="small ${recording.error ? "crm-error" : "muted"}" aria-live="polite">${status}${recording.error ? " · " + esc(recording.error) : ""}</p>` : ""}
-    ${recording.recording ? `<details><summary class="small">Открыть запись</summary><${tag} controls preload="none" src="${url}" aria-label="Запись разговора"></${tag}></details>` : ""}
+    ${recording.recording ? `<${tag} controls loading="lazy" preload="metadata" ${tag === "video" ? 'width="480" height="270" playsinline' : ""} src="${url}" aria-label="Запись разговора"></${tag}>` : ""}
+    ${demoAudio ? '<small class="muted">Синтетическая озвучка разговора</small>' : ""}
   </div>`;
 }
 

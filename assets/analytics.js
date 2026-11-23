@@ -1,7 +1,7 @@
 "use strict";
 
-const analyticsSections = [["overview", "Обзор"], ["sales", "Продажи"], ["workload", "Команда и каналы"], ["reviews", "Разборы"]];
-const analyticsState = {scope: "all", person: "", days: 7, day: "",
+const analyticsSections = [["overview", "Обзор"], ["sales", "Продажи"], ["workload", "Команда и каналы"], ["reviews", "Разборы"], ["metrics", "Все метрики"]];
+const analyticsState = {scope: "all", person: "", days: 7, category: "all", query: "",
   section: analyticsSections.find(([key]) => location.hash === "#analytics-" + key)?.[0] || "overview"};
 const analyticsDate = new Intl.DateTimeFormat("ru-RU", {dateStyle: "medium", timeZone: "Europe/Minsk"});
 const analyticsDay = new Intl.DateTimeFormat("en-CA", {year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Minsk"});
@@ -151,35 +151,123 @@ function keyMetric(label, value, note, tone, href = "") {
 
 function statusRows(m) {
   return [
-    ["Не начаты", m.notStarted, "blue"], ["В работе", m.inProgress, "cyan"],
-    ["Выполнены", m.done.length, "mint"], ["Отменены", m.cancelled, "muted"],
+    ["Не начаты", m.notStarted, "blue"], ["В работе", m.inProgress, "amber"],
+    ["Выполнены", m.done.length, "mint"], ["Отменены", m.cancelled, "rose"],
   ];
+}
+
+// IDs only connect controls to hints within the current report.
+let chartPointId = 0;
+
+function chartPoint(label, value, dateLabel, tone, content, className, id = "chart-point-" + ++chartPointId) {
+  const hint = id + "-hint";
+  return `<button type="button" class="chart-point ${className}" id="${id}" data-color="${tone}"
+    interestfor="${hint}" popovertarget="${hint}" popovertargetaction="show" aria-expanded="false"
+    aria-label="${esc(label + ', ' + value + ', ' + dateLabel)}">${content}</button>
+    <span class="chart-hint" data-color="${tone}" id="${hint}" role="tooltip" popover="hint">
+      <small>${esc(dateLabel)}</small><strong>${esc(label)} <b>${esc(value)}</b></strong>
+    </span>`;
+}
+
+function positionChartHint(hint) {
+  const trigger = $(hint.id.slice(0, -5));
+  if (!trigger) return;
+  const anchorElement = trigger.querySelector(".daily-bar") || trigger;
+  const anchor = anchorElement.getBoundingClientRect();
+  const width = hint.offsetWidth;
+  const height = hint.offsetHeight;
+  const left = Math.max(6, Math.min(innerWidth - width - 6, anchor.left + (anchor.width - width) / 2));
+  hint.style.left = left + "px";
+  const top = anchor.top >= height + 6 ? anchor.top - height : anchor.bottom;
+  hint.style.top = Math.max(6, Math.min(innerHeight - height - 6, top)) + "px";
+}
+
+const nativeChartInterest = "interestForElement" in HTMLButtonElement.prototype;
+
+function showChartHint(button) {
+  const hint = $(button.getAttribute("interestfor"));
+  if (hint.showPopover) hint.showPopover();
+  else {
+    closeFallbackHints();
+    hint.classList.add("is-open");
+    button.setAttribute("aria-expanded", "true");
+  }
+  positionChartHint(hint);
+}
+
+function closeFallbackHints() {
+  for (const hint of $("results").querySelectorAll(".chart-hint.is-open")) {
+    hint.classList.remove("is-open");
+    $(hint.id.slice(0, -5))?.setAttribute("aria-expanded", "false");
+  }
+}
+
+$("results").addEventListener("toggle", event => {
+  const hint = event.target;
+  if (!hint.matches(".chart-hint")) return;
+  const open = event.newState === "open";
+  $(hint.id.slice(0, -5))?.setAttribute("aria-expanded", String(open));
+  if (open) positionChartHint(hint);
+}, true);
+
+function chartTrigger(target) {
+  const arc = target.closest("[data-legend]");
+  return arc ? $(arc.dataset.legend) : target.closest(".chart-point");
+}
+
+for (const type of ["pointerover", "focusin", "click"]) {
+  $("results").addEventListener(type, event => {
+    const trigger = chartTrigger(event.target);
+    if (!trigger) return;
+    const nativeTrigger = type === "click" ? trigger.popoverTargetElement : nativeChartInterest;
+    if (!nativeTrigger || event.target.closest("[data-legend]")) showChartHint(trigger);
+  });
+}
+
+for (const type of ["pointerout", "focusout"]) {
+  $("results").addEventListener(type, event => {
+    const trigger = chartTrigger(event.target);
+    const hint = trigger ? $(trigger.getAttribute("interestfor")) : event.target.closest(".chart-hint");
+    if (!hint || nativeChartInterest && !event.target.closest("[data-legend]")) return;
+    const next = event.relatedTarget;
+    if (next instanceof Element && (hint.contains(next) || chartTrigger(next) === $(hint.id.slice(0, -5)))) return;
+    hint.hidePopover?.();
+    closeFallbackHints();
+  });
+}
+
+document.addEventListener("pointerdown", event => {
+  if (!event.target.closest(".chart-point, .chart-hint, [data-legend]")) closeFallbackHints();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeFallbackHints();
+});
+
+function repositionChartHints() {
+  for (const trigger of $("results").querySelectorAll('.chart-point[aria-expanded="true"]')) {
+    positionChartHint($(trigger.getAttribute("interestfor")));
+  }
+}
+window.addEventListener("resize", repositionChartHints);
+document.addEventListener("scroll", repositionChartHints, true);
+
+function snapshotDate() {
+  return "На " + analyticsDate.format(new Date(data.generated_at || Date.now()));
 }
 
 function barRows(rows, label) {
   const maximum = Math.max(0, ...rows.map(row => row[1] || 0));
   return `<ul class="analytics-bar-list" aria-label="${label}">${rows.map(([name, count, color], index) =>
-    `<li class="analytics-bar-row" style="--sequence:${index}">
-      <span>${esc(name)}</span><strong class="numeric">${number(count)}</strong>
-      <span class="analytics-track" aria-hidden="true"><span class="chart-fill" data-color="${color}" style="--length:${maximum ? count / maximum * 100 : 0}%"></span></span>
-    </li>`).join("")}</ul>`;
-}
-
-function chartDayLabel(bucket) {
-  return analyticsDate.format(new Date(bucket.time + 12 * 3_600_000));
-}
-
-function dayLine(bucket) {
-  return `${chartDayLabel(bucket)} · общение: ${number(bucket.calls)}, действия: ${number(bucket.actions)}`;
+    `<li style="--sequence:${index}">${chartPoint(name, number(count), snapshotDate(), color,
+      `<span>${esc(name)}</span><strong class="numeric">${number(count)}</strong>
+      <span class="analytics-track" aria-hidden="true"><span class="chart-fill" style="--length:${maximum ? count / maximum * 100 : 0}%"></span></span>`,
+      "analytics-bar-row")}</li>`).join("")}</ul>`;
 }
 
 function activityChart(m, now) {
   const taskEvents = m.tasks.flatMap(task =>
     [task.assigned_at, task.started_at, task.completed_at].filter(Boolean).map(at => ({at})));
   const buckets = activityDays(m.calls, [...m.actions, ...taskEvents], analyticsState.days, now);
-  const selected = buckets.find(bucket => bucket.iso === analyticsState.day) ||
-    buckets.findLast(bucket => bucket.calls || bucket.actions) || buckets.at(-1);
-  analyticsState.day = selected.iso;
   const peak = Math.max(1, ...buckets.map(bucket => Math.max(bucket.calls, bucket.actions)));
   const step = Math.ceil(peak / 3);
   const limit = step * 3;
@@ -190,21 +278,22 @@ function activityChart(m, now) {
         ${[7, 14].map(days => analyticsButton(days + " дней", "data-days", days, days === analyticsState.days)).join("")}
       </div>
     </div>
-    <div class="activity-legend"><span data-color="blue">Общение</span><span data-color="mint">Действия</span></div>
+    <div class="activity-legend"><span data-color="blue">Общение</span><span data-color="amber">Действия</span></div>
     <figure class="daily-figure">
       <div class="daily-frame">
         <div class="axis-y numeric" aria-hidden="true">${[limit, step*2, step, 0].map(value => `<span>${number(value)}</span>`).join("")}</div>
         <div class="daily-chart" data-bucket-count="${buckets.length}" style="--days:${buckets.length}">
-          ${buckets.map((bucket, index) => `<button type="button" class="daily-column" data-day="${bucket.iso}"
-            aria-label="${esc(dayLine(bucket))}" aria-pressed="${bucket.iso === selected.iso}"
-            style="--sequence:${index}">
-            <span class="daily-bars" aria-hidden="true"><span class="daily-bar" data-color="blue" style="--length:${bucket.calls / limit * 100}%"></span>
-            <span class="daily-bar" data-color="mint" style="--length:${bucket.actions / limit * 100}%"></span></span>
-            <span class="daily-tick" aria-hidden="true">${Number(bucket.iso.slice(-2))}</span>
-          </button>`).join("")}
+          ${buckets.map((bucket, index) => {
+            const dateLabel = analyticsDate.format(new Date(bucket.time + 12 * 3_600_000));
+            return `<div class="daily-column" style="--sequence:${index}">
+              ${[["Общение", bucket.calls, "blue"], ["Действия", bucket.actions, "amber"]].map(([label, count, tone]) =>
+                chartPoint(label, number(count), dateLabel, tone,
+                  `<span class="daily-bar" style="--length:${count / limit * 100}%"></span>`, "daily-point")).join("")}
+              <span class="daily-tick" aria-hidden="true">${Number(bucket.iso.slice(-2))}</span>
+            </div>`;
+          }).join("")}
         </div>
       </div>
-      <figcaption id="activity-selection" class="small muted" aria-live="polite">${esc(dayLine(selected))}</figcaption>
     </figure>
   </section>`;
 }
@@ -212,19 +301,31 @@ function activityChart(m, now) {
 function taskChart(m) {
   const rows = statusRows(m);
   const total = m.tasks.length;
-  let offset = 0;
-  const stops = total ? rows.filter(([, count]) => count).map(([, count, tone]) => {
+  let offset = -Math.PI / 2;
+  const point = (angle, radius = 49) => [60 + radius * Math.cos(angle), 60 + radius * Math.sin(angle)].join(" ");
+  const arcs = rows.map(([, count, tone], index) => {
+    if (!count) return "";
     const start = offset;
-    offset += count / total * 100;
-    return `var(--chart-${tone}) ${start}% ${offset}%`;
-  }).join(",") : "var(--border) 0% 100%";
+    offset += count / total * 2 * Math.PI;
+    // Two half-arcs also describe a full circle when only one status is present.
+    return `<path data-color="${tone}" data-legend="task-status-${index}"
+      d="M ${point(start)} A 49 49 0 0 1 ${point((start + offset) / 2)} A 49 49 0 0 1 ${point(offset)}"/>`;
+  }).join("");
+  let boundary = -Math.PI / 2;
+  const separators = rows.filter(([, count]) => count > 0 && count < total).map(([, count]) => {
+    const line = `<path class="ring-divider" d="M ${point(boundary, 39)} L ${point(boundary, 59)}"/>`;
+    boundary += count / total * 2 * Math.PI;
+    return line;
+  }).join("");
   return card("Задачи по статусам", `
     <div class="task-chart">
-      <div class="analytics-ring" style="--ring:conic-gradient(${stops})" aria-hidden="true">
-        <div><strong class="numeric">${number(total)}</strong><span>задач</span></div>
+      <div class="analytics-ring">
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="49"/>${arcs}${separators}</svg>
+        <div><strong class="numeric">${number(total)}</strong><span>${countWithNoun(total, "задача", "задачи", "задач").split(" ").at(-1)}</span></div>
       </div>
-      <ul class="chart-legend" aria-label="Задачи по статусам">${rows.map(([name, count, tone]) =>
-        `<li data-color="${tone}"><span>${name}</span><strong class="numeric">${number(count)}</strong></li>`).join("")}</ul>
+      <ul class="chart-legend" aria-label="Задачи по статусам">${rows.map(([name, count, tone], index) =>
+        `<li>${chartPoint(name, number(count), snapshotDate(), tone,
+          `<span>${name}</span><strong class="numeric">${number(count)}</strong>`, "legend-point", "task-status-" + index)}</li>`).join("")}</ul>
     </div>`, "analytics-task-chart");
 }
 
@@ -234,57 +335,117 @@ function metricRows(rows) {
   </div>`).join("")}</dl>`;
 }
 
-function metricsCatalog(m) {
+function metricGroups(m) {
   const r = m.review;
   const editCount = [...r.edits.values()].reduce((sum, count) => sum + count, 0);
   return [
-    ["Договорённости с цитатой", number(m.promises.length)],
-    ["Подтвердил менеджер", number(r.confirmed.length), `Из черновиков модели: ${r.acceptedModel.length}`],
-    ["Черновики ждут проверки", number(r.drafts.length)],
-    ["Отклонено", number(r.rejected.length), "Решения менеджера по черновикам"],
-    ["Известен ответственный", number(m.promises.length), "Менеджер или клиент"],
-    ["Всего задач", number(m.tasks.length)],
-    ["Задачи не начаты", number(m.notStarted)],
-    ["Задачи в работе", number(m.inProgress)],
-    ["Задачи отменены", number(m.cancelled)],
-    ["Записи с текстом без разбора", number(m.pendingReview)],
-    ["Задачи в CRM", number(m.crm)],
-    ["Выполнено в CRM", number(m.crmDone), "Статус задач с ID в CRM"],
-    ["Выполнено задач", number(m.done.length)],
-    ["Выполнено в срок", number(m.timed ? m.onTime : null)],
-    ["Выполнено без срока", number(m.withoutDeadline)],
-    ["Выполнено без времени закрытия", number(m.withoutCompletionTime)],
-    ["Доля закрытых в срок", percent(m.onTimeShare), `Замеров: ${number(m.timed)}`],
-    ["Обязательства с истёкшим сроком", number(m.overdue.length)],
-    ["Черновики с истёкшим сроком", number(r.overdueDrafts)],
-    ["Доля подтверждённых", percent(proportion(r.acceptedModel.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
-    ["Доля отклонённых", percent(proportion(r.rejected.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
-    ["Приглашения подтверждены и отправлены в срок", percent(proportion(r.closedLoop, r.invites)), `${r.closedLoop} из ${r.invites} приглашений в журнале`],
-    ["Подтверждено без правок", percent(proportion(r.unchanged, r.acceptedModel.length)), `Из ${r.acceptedModel.length} подтверждённых черновиков модели`],
-    ["Принято без правок из всех черновиков", percent(proportion(r.unchanged, r.candidates))],
-    ["Всего правок", number(editCount)],
-    ...[...r.edits].map(([field, count]) => [auditFieldLabels[field] || "Другое поле", number(count)]),
-    ["От текста до черновика", duration(r.processing.median), latencyNote(r.processing, "Нет успешных запусков модели")],
-    ["От приёма записи до черновика", duration(r.recording.median), latencyNote(r.recording, "Источник ещё не передал время приёма записи")],
-    ["Ошибки обработки", number(r.failed)],
-    ["События с автором", number(r.reviews.length), "Подтверждения и отклонения"],
-    ["События системы", number(r.systemEvents), "Запуски модели"]
+    {id: "sales", title: "Продажи", rows: [
+      ["Выигранные сделки", number(m.won.length)],
+      ["Закрытые сделки", number(m.closed.length)],
+      ["Доля выигранных", percent(m.conversion), `${m.won.length} из ${m.closed.length} закрытых`],
+      ["Сумма выигранных сделок", [...m.revenue].map(([code, value]) => money(value, code)).join(" · ") || "—", `Сумма известна для ${m.wonWithAmount} из ${m.won.length}`],
+    ]},
+    {id: "communication", title: "Общение", rows: [
+      ["Звонки", number(m.countCalls)],
+      ["Встречи из источников", number(m.meetings)],
+      ["Отправили приглашение", number(m.invited)],
+      ["Провели встречу по сигналу", number(m.held)],
+      ["Согласован следующий шаг", percent(m.nextStepShare), `Разобрано событий: ${m.analyzed.length}`],
+      ["Уточнена потребность клиента", percent(m.needShare), `Оценено разговоров: ${m.qualityCount}`],
+      ["Проговорён срок", percent(m.deadlineShare), `Оценено разговоров: ${m.qualityCount}`],
+      ["Приглашения подтверждены и отправлены в срок", percent(proportion(r.closedLoop, r.invites)), `${r.closedLoop} из ${r.invites} приглашений в журнале`],
+    ]},
+    {id: "tasks", title: "Задачи и сроки", rows: [
+      ["Просроченные задачи", number(m.overdue.length), "Открытые задачи с истёкшим сроком"],
+      ["Всего задач", number(m.tasks.length)],
+      ["Задачи не начаты", number(m.notStarted)],
+      ["Задачи в работе", number(m.inProgress)],
+      ["Задачи отменены", number(m.cancelled)],
+      ["Задачи в CRM", number(m.crm)],
+      ["Выполнено в CRM", number(m.crmDone), "Статус задач с ID в CRM"],
+      ["Выполнено задач", number(m.done.length)],
+      ["Выполнено в срок", number(m.timed ? m.onTime : null)],
+      ["Выполнено без срока", number(m.withoutDeadline)],
+      ["Выполнено без времени закрытия", number(m.withoutCompletionTime)],
+      ["Доля закрытых в срок", percent(m.onTimeShare), `Замеров: ${number(m.timed)}`],
+      ["От назначения задачи до старта", minutes(m.meanStart), `Среднее по замерам: ${m.accepted}`],
+      ["Договорённости с цитатой", number(m.promises.length)],
+      ["Известен ответственный", number(m.promises.length), "Менеджер или клиент"],
+    ]},
+    {id: "quality", title: "Качество разбора", rows: [
+      ["Подтвердил менеджер", number(r.confirmed.length), `Из черновиков модели: ${r.acceptedModel.length}`],
+      ["Черновики ждут проверки", number(r.drafts.length)],
+      ["Отклонено", number(r.rejected.length), "Решения менеджера по черновикам"],
+      ["Черновики с истёкшим сроком", number(r.overdueDrafts)],
+      ["Доля подтверждённых", percent(proportion(r.acceptedModel.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
+      ["Доля отклонённых", percent(proportion(r.rejected.length, r.candidates)), `Черновиков модели: ${r.candidates}`],
+      ["Подтверждено без правок", percent(proportion(r.unchanged, r.acceptedModel.length)), `Из ${r.acceptedModel.length} подтверждённых черновиков модели`],
+      ["Принято без правок из всех черновиков", percent(proportion(r.unchanged, r.candidates))],
+      ["Всего правок", number(editCount)],
+      ...[...r.edits].map(([field, count]) => ["Правки · " + (auditFieldLabels[field] || "Другое поле"), number(count)]),
+      ["События с автором", number(r.reviews.length), "Подтверждения и отклонения"],
+    ]},
+    {id: "processing", title: "Обработка записей", rows: [
+      ["Записи с текстом без разбора", number(m.pendingReview)],
+      ["От текста до черновика", duration(r.processing.median), latencyNote(r.processing, "Нет успешных запусков модели")],
+      ["От приёма записи до черновика", duration(r.recording.median), latencyNote(r.recording, "Источник ещё не передал время приёма записи")],
+      ["Ошибки обработки", number(r.failed)],
+      ["События системы", number(r.systemEvents), "Запуски модели"],
+    ]},
   ];
 }
 
-function salesMetrics(m) {
-  return [
-    ["Звонки", number(m.countCalls)], ["Встречи из источников", number(m.meetings)],
-    ["Выигранные сделки", number(m.won.length)], ["Закрытые сделки", number(m.closed.length)],
-    ["Доля выигранных", percent(m.conversion), `${m.won.length} из ${m.closed.length} закрытых`],
-    ["Сумма выигранных сделок", [...m.revenue].map(([code, value]) => money(value, code)).join(" · ") || "—",
-      `Сумма известна для ${m.wonWithAmount} из ${m.won.length}`],
-    ["От назначения задачи до старта", minutes(m.meanStart), `Среднее по замерам: ${m.accepted}`],
-    ["Отправили приглашение", number(m.invited)], ["Провели встречу по сигналу", number(m.held)],
-    ["Согласован следующий шаг", percent(m.nextStepShare), `Разобрано событий: ${m.analyzed.length}`],
-    ["Уточнена потребность клиента", percent(m.needShare), `Оценено разговоров: ${m.qualityCount}`],
-    ["Проговорён срок", percent(m.deadlineShare), `Оценено разговоров: ${m.qualityCount}`],
-  ];
+const metricAliases = {
+  "Просроченные задачи": "просрочка просрочено задержки обязательства",
+  "Черновики с истёкшим сроком": "просрочка черновиков",
+  "Доля выигранных": "конверсия win rate",
+  "Сумма выигранных сделок": "выручка оборот",
+  "Договорённости с цитатой": "обещания",
+  "Всего правок": "редактирование исправления",
+  "От текста до черновика": "скорость время обработки звонка анализ",
+  "От приёма записи до черновика": "скорость время обработки звонка записи",
+};
+
+function searchText(value) {
+  return value.toLocaleLowerCase("ru").replaceAll("ё", "е").trim();
+}
+
+function metricsDirectory(groups) {
+  return `<section class="analytics-card metric-directory" aria-labelledby="directory-title">
+    <div class="analytics-card-head"><h2 id="directory-title">Каталог метрик</h2><span class="small muted">По загруженным данным</span></div>
+    <div class="metric-controls">
+      <label>Поиск по метрикам<input type="search" id="metric-search" placeholder="Например, просрочка" value="${esc(analyticsState.query)}"></label>
+      <label>Категория<select id="metric-category"><option value="all">Все категории</option>${groups.map(group =>
+        `<option value="${group.id}"${analyticsState.category === group.id ? " selected" : ""}>${group.title}</option>`).join("")}</select></label>
+    </div>
+    <p class="small muted" id="metric-count" role="status"></p>
+    <div class="metric-groups">${groups.map(group => `<section data-metric-group="${group.id}">
+      <h3>${group.title}</h3>${metricRows(group.rows)}</section>`).join("")}</div>
+    <button type="button" data-reset-metrics hidden>Сбросить фильтры</button>
+  </section>`;
+}
+
+function filterMetrics() {
+  const directory = $("results").querySelector(".metric-directory");
+  if (!directory) return;
+  const words = searchText(analyticsState.query).split(/\s+/).filter(Boolean);
+  let count = 0;
+  for (const group of directory.querySelectorAll("[data-metric-group]")) {
+    const title = group.querySelector("h3").textContent;
+    const included = analyticsState.category === "all" || analyticsState.category === group.dataset.metricGroup;
+    let matches = 0;
+    for (const row of group.querySelectorAll(".analytics-values > div")) {
+      const term = row.querySelector("dt");
+      const alias = metricAliases[term.firstChild.textContent] || "";
+      const text = searchText([title, term.firstChild.textContent, term.querySelector("small")?.textContent || "", alias].join(" "));
+      row.hidden = !(included && words.every(word => text.includes(word)));
+      if (!row.hidden) matches++;
+    }
+    group.hidden = matches === 0;
+    count += matches;
+  }
+  $("metric-count").textContent = count ? countWithNoun(count, "показатель", "показателя", "показателей") : "По вашему запросу ничего не найдено.";
+  directory.querySelector("[data-reset-metrics]").hidden = count > 0;
 }
 
 function detailsBlock(title, body, id = "") {
@@ -293,7 +454,7 @@ function detailsBlock(title, body, id = "") {
 }
 
 function sourceRows(calls) {
-  const sourceChannels = {call: "blue", meeting: "purple", message: "mint", email: "cyan"};
+  const sourceChannels = {call: "blue", meeting: "rose", message: "mint", email: "amber"};
   return Object.entries(channels).map(([id, label]) => [
     label, tally(calls, call => (call.channel || "call") === id), sourceChannels[id]
   ]);
@@ -362,10 +523,11 @@ function renderResults() {
   }
   const stagesRows = [...stageCounts].map(([label, count]) => [label, count, "blue"]);
   const promiseRows = [
-    ["Найдено по репликам", m.promises.length, "blue"], ["Связано с CRM", m.crm, "cyan"],
+    ["Найдено по репликам", m.promises.length, "blue"], ["Связано с CRM", m.crm, "amber"],
     ["Выполнено", m.done.length, "mint"]
   ];
-  const sales = salesMetrics(m);
+  const groups = metricGroups(m);
+  const rows = Object.fromEntries(groups.map(group => [group.id, group.rows]));
   $("results").innerHTML = `<div class="analytics-toolbar work-panel">
     <div class="analytics-toolbar-left">
       <div class="analytics-segment" role="group" aria-label="Разрез аналитики">
@@ -416,10 +578,10 @@ function renderResults() {
     ` : ""}
     ${analyticsState.section === "sales" ? `
       <div class="analytics-equal-grid analytics-entry">
-        ${card("Результаты продаж", metricRows(sales.slice(2, 6)))}
+        ${card("Результаты продаж", metricRows(rows.sales))}
         ${card("Сделки по этапам", stagesRows.length ? barRows(stagesRows, "Текущие этапы сделок") : '<p class="small muted">Сделок пока нет.</p>')}
-        ${card("Звонки и встречи", metricRows([...sales.slice(0, 2), ...sales.slice(7, 9)]))}
-        ${card("Качество общения", metricRows(sales.slice(9)))}
+        ${card("Звонки и встречи", metricRows(rows.communication.slice(0, 4)))}
+        ${card("Качество общения", metricRows(rows.communication.slice(4, 7)))}
       </div>
       ${detailsBlock("Договорённости и сделки", drillRows(m.deals, m.promises))}
     ` : ""}
@@ -428,7 +590,7 @@ function renderResults() {
         ${card("Нагрузка сотрудников", workloadRows(person ? [person] : people, data, now))}
         ${card("Каналы общения", barRows(sourceRows(m.calls), "События по каналам") +
           (m.calls.length ? '<details class="analytics-fold"><summary class="small">По источникам</summary>' + sourceDetails(m.calls) + '</details>' : ""))}
-        ${card("От договорённости до задачи", barRows(promiseRows, "Состояние задач") + metricRows([sales[6]]))}
+        ${card("От договорённости до задачи", barRows(promiseRows, "Состояние задач") + metricRows(rows.tasks.filter(([label]) => label === "От назначения задачи до старта")))}
       </div>
     ` : ""}
     ${analyticsState.section === "reviews" ? `
@@ -445,8 +607,9 @@ function renderResults() {
         ]))}
       </div>
     ` : ""}
-    ${detailsBlock("Все метрики и расчёт", '<p class="small muted">Отчёт учитывает загруженные данные. Фильтр по сотруднику показывает сделки, закреплённые за ним сейчас. Период меняет только график активности.</p>' + metricRows(metricsCatalog(m)))}
+    ${analyticsState.section === "metrics" ? metricsDirectory(groups) : ""}
   `}`;
+  filterMetrics();
 }
 
 function exportAnalytics() {
@@ -454,7 +617,7 @@ function exportAnalytics() {
   const rows = [
     ["Источник", preview ? "Синтетические данные" : "Загруженные данные"],
     ["Срез", now.toISOString()], ["Ответственный", person || "Вся команда"],
-    ["Показатель", "Значение", "Уточнение"], ...salesMetrics(m), ...metricsCatalog(m)
+    ["Показатель", "Значение", "Уточнение"], ...metricGroups(m).flatMap(group => group.rows)
   ];
   const cell = value => {
     const text = String(value ?? "");
@@ -472,24 +635,22 @@ function exportAnalytics() {
 $("results").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
-  if (button.dataset.analyticsSection) {
+  if (button.hasAttribute("data-reset-metrics")) {
+    analyticsState.query = $("metric-search").value = "";
+    analyticsState.category = $("metric-category").value = "all";
+    filterMetrics();
+    $("metric-search").focus();
+  } else if (button.dataset.analyticsSection) {
     analyticsState.section = button.dataset.analyticsSection;
     history.replaceState(null, "", "#analytics-" + analyticsState.section);
     renderResults();
     $("results").querySelector("[data-analytics-section][aria-pressed=true]").focus();
   } else if (button.dataset.days) {
     analyticsState.days = Number(button.dataset.days);
-    analyticsState.day = "";
     renderResults();
     $("results").querySelector("[data-days][aria-pressed=true]").focus();
-  } else if (button.dataset.day) {
-    analyticsState.day = button.dataset.day;
-    $("results").querySelector(".daily-column[aria-pressed=true]").setAttribute("aria-pressed", "false");
-    button.setAttribute("aria-pressed", "true");
-    $("activity-selection").textContent = button.getAttribute("aria-label");
   } else if (button.dataset.analyticsScope) {
     analyticsState.scope = button.dataset.analyticsScope;
-    analyticsState.day = "";
     renderResults();
     $("results").querySelector("[data-analytics-scope][aria-pressed=true]").focus();
   } else if (button.dataset.employee) {
@@ -507,8 +668,19 @@ $("results").addEventListener("click", event => {
   }
 });
 $("results").addEventListener("change", event => {
+  if (event.target.id === "metric-category") {
+    analyticsState.category = event.target.value;
+    filterMetrics();
+    return;
+  }
   if (event.target.id !== "analytics-person") return;
   analyticsState.person = event.target.value;
   renderResults();
   $("analytics-person").focus();
+});
+
+$("results").addEventListener("input", event => {
+  if (event.target.id !== "metric-search") return;
+  analyticsState.query = event.target.value;
+  filterMetrics();
 });

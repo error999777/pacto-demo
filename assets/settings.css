@@ -148,6 +148,36 @@ button.catalog-example {
 .crm-dialog input, .crm-dialog select { margin-top: .3rem; }
 .crm-dialog .crm-local-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: .6rem; }
 .crm-dialog .actions { justify-content: flex-end; }
+.bitrix-wizard { background: var(--panel); }
+.bitrix-header { display: flex; align-items: center; gap: .7rem; }
+.bitrix-header img { object-fit: contain; flex: none; }
+.bitrix-header h2 { margin: 0; font-size: 1.2rem; line-height: 1.25; }
+.bitrix-header button { margin-inline-start: auto; font-size: 1.5rem; }
+.bitrix-steps { display: flex; list-style: none; padding: 0; gap: .4rem; margin: 1rem 0; }
+.bitrix-steps li { flex: 1; padding: .4rem 0; border-bottom: 2px solid var(--border); color: var(--muted); font-size: .83rem; }
+.bitrix-steps [aria-current] { border-color: var(--blue); color: var(--text); font-weight: 650; }
+.bitrix-wizard h3 { margin: .8rem 0 .6rem; font-size: 1.05rem; }
+.bitrix-instructions { display: grid; gap: .65rem; padding-inline-start: 1.4rem; margin: .65rem 0; }
+.bitrix-instructions li::marker { color: var(--blue); }
+.bitrix-wizard label, .bitrix-wizard small { display: block; }
+.bitrix-wizard small { margin-block: .35rem; }
+.bitrix-demo { color: var(--blue); }
+#bitrix-portal-help { margin: .9rem 0; }
+#bitrix-portal-help summary { color: var(--blue); }
+#bitrix-verified, .bitrix-success { color: var(--chart-mint, #82ebc3); }
+#bitrix-verified { margin-top: .8rem; padding: .6rem; border-inline-start: 2px solid; background: #19333a; }
+.bitrix-wizard .actions { justify-content: flex-end; flex-wrap: wrap; }
+.bitrix-counts { display: grid; grid-template-columns: repeat(auto-fit,minmax(5.4rem,1fr)); gap: .45rem; margin: .8rem 0; }
+.bitrix-counts > div { background: var(--surface); padding: .55rem; border-radius: .4rem; }
+.bitrix-counts dt { font-size: .79rem; color: var(--muted); }
+.bitrix-counts dd { margin: .15rem 0 0; font-size: 1.25rem; font-weight: 650; }
+@media (max-width: 24rem) {
+  .bitrix-wizard { padding: 1rem; }
+  .bitrix-header { gap: .5rem; }
+  .bitrix-header img { width: 2rem; height: 2rem; }
+  .bitrix-header h2 { font-size: 1.05rem; }
+  .bitrix-header button { padding-inline: .4rem; }
+}
 .crm-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
 .channel-dialog ::placeholder { color: var(--muted); }
 .channel-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }

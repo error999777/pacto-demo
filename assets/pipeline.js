@@ -35,6 +35,7 @@ function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => entities[char]);
 }
 function entrance() {
+  if (location.hash === "#clients") return "clients";
   if (location.hash === "#settings" || location.hash === "#channels" || location.hash.startsWith("#settings-")) return "settings";
   if (location.hash === "#team") return "team";
   if (location.hash === "#reminders") return "reminders";
@@ -102,7 +103,7 @@ function showLogin() {
 
 function demoSnapshot() {
   const member = demoRole === "lead" ? "local-lead" : "local-manager";
-  return {...snapshots[snapshotIndex], role: demoRole, member_id: member,
+  return {...withDemoBitrix(snapshots[snapshotIndex]), role: demoRole, member_id: member,
     name: demoRole === "lead" ? "Анна Соколова" : "Мария Волкова",
     reminders: demoReminders(member)};
 }
@@ -114,7 +115,7 @@ async function refresh() {
   $("logout").hidden = preview;
   $("actor").textContent = data.name;
   $("preview-bar").hidden = !preview;
-  $("reset-preview").hidden = snapshotIndex === 0;
+  $("reset-preview").hidden = snapshotIndex === 0 && !demoBitrixConnected;
   render();
 }
 
@@ -766,6 +767,7 @@ $("import-form").addEventListener("submit", event => {
 });
 $("reset-preview").addEventListener("click", () => {
   snapshotIndex = 0;
+  demoBitrixConnected = false;
   data = demoSnapshot();
   $("reset-preview").hidden = true;
   setView("queue");

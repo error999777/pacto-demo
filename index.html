@@ -20,6 +20,7 @@
   <script defer src="assets/feedback.js"></script>
   <script defer src="assets/reminders.js"></script>
   <script defer src="assets/crm.js"></script>
+  <script defer src="assets/bitrix.js"></script>
   <script defer src="assets/channels.js"></script>
 </head>
 <body>
@@ -211,6 +212,40 @@
         <button type="submit" class="primary">Сохранить</button>
       </div>
     </form>
+  </dialog>
+  <dialog class="settings-dialog bitrix-wizard" id="bitrix-dialog" aria-labelledby="bitrix-title">
+    <header class="bitrix-header"><img src="assets/brands/bitrix24.png" width="40" height="40" alt="">
+      <h2 id="bitrix-title">Подключение Битрикс24</h2>
+      <button type="button" class="quiet" id="bitrix-close" aria-label="Закрыть мастер">×</button>
+    </header>
+    <ol class="bitrix-steps" aria-label="Этапы подключения"><li>1. Вебхук</li><li>2. Доступ</li><li>3. Импорт</li></ol>
+    <p class="bitrix-demo small" id="bitrix-demo-note" hidden>Демо · учебный портал и вымышленные данные</p>
+    <section id="bitrix-guide">
+      <h3 tabindex="-1">Создайте входящий вебхук</h3>
+      <ol class="bitrix-instructions">
+        <li>В Битрикс24 откройте <strong>Разработчикам → Готовые сценарии → Другое → Входящий вебхук</strong>.</li>
+        <li>В правах доступа выберите <strong>CRM (crm)</strong> и <strong>Задачи (task)</strong>. Сохраните вебхук.</li>
+        <li>Скопируйте адрес из поля <strong>«Вебхук для вызова REST API»</strong>.</li>
+      </ol>
+      <details id="bitrix-portal-help"><summary>Открыть раздел на моём портале</summary>
+        <label for="bitrix-portal">Адрес портала</label>
+        <input id="bitrix-portal" placeholder="komanda.bitrix24.ru" spellcheck="false" autocomplete="off" aria-describedby="bitrix-portal-note">
+        <small class="muted" id="bitrix-portal-note">Введите домен вашего Битрикс24.</small>
+        <a id="bitrix-portal-link" target="_blank" rel="noopener noreferrer" hidden>Перейти в «Разработчикам» ↗</a>
+      </details>
+      <a href="https://apidocs.bitrix24.ru/local-integrations/local-webhooks.html#kak-sozdat-vhodyashij-vebhuk" target="_blank" rel="noopener noreferrer">Инструкция Битрикс24 ↗</a>
+    </section>
+    <form id="bitrix-access" hidden>
+      <h3 tabindex="-1">Проверьте доступ к данным</h3>
+      <label for="bitrix-hook">Адрес входящего вебхука</label>
+      <input id="bitrix-hook" name="webhook" type="password" autocomplete="new-password" spellcheck="false" maxlength="2048" required aria-describedby="bitrix-hook-hint bitrix-status">
+      <small class="muted" id="bitrix-hook-hint">Формат: https://портал/rest/ID/ключ/</small>
+      <div id="bitrix-verified" hidden></div>
+    </form>
+    <section id="bitrix-result" hidden><h3 tabindex="-1">Первая загрузка</h3><div id="bitrix-summary"></div></section>
+    <p id="bitrix-status" class="small" role="status" aria-live="polite"></p>
+    <footer class="actions"><button type="button" id="bitrix-back" class="quiet">Назад</button>
+      <button type="button" id="bitrix-next" class="primary">Продолжить</button></footer>
   </dialog>
   <dialog class="settings-dialog crm-dialog" id="crm-dialog" aria-labelledby="crm-dialog-title">
     <h2 id="crm-dialog-title">Подключить CRM</h2>

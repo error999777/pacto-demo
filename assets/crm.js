@@ -37,8 +37,9 @@ function crmConnectionRows() {
           <p class="small muted">Последняя загрузка ${esc(date(item.succeeded_at))} · Изменений ${count.changed}
           ${count.skipped ? " · Без связи или даты " + count.skipped : ""}</p>` : ""}
         ${item.error ? `<p class="small crm-error">${esc(item.error)}</p>` : ""}
+        ${item.provider === "bitrix24" ? `<button type="button" class="source-link" data-bitrix-result="${esc(item.id)}">Результат загрузки</button>` : ""}
       </div>
-      ${canManageTeam() ? `<div class="connection-actions actions">
+      ${!preview && canManageTeam() ? `<div class="connection-actions actions">
         <button type="button" data-crm-action="sync"${!item.enabled || waiting || item.running ? " disabled" : ""}>Обновить сейчас</button>
         <button type="button" data-crm-action="state" data-enable="${!item.enabled}">${item.enabled ? "Приостановить" : "Возобновить"}</button>
       </div>` : ""}
@@ -103,6 +104,10 @@ function crmFormFields() {
 }
 
 function showCrmForm(provider) {
+  if (provider === "bitrix24") {
+    openBitrixWizard();
+    return;
+  }
   $("crm-form").reset();
   $("crm-form-status").textContent = "";
   $("crm-provider").value = provider;
@@ -137,6 +142,11 @@ $("settings").addEventListener("click", event => {
 });
 
 $("crm-provider").addEventListener("change", () => {
+  if ($("crm-provider").value === "bitrix24") {
+    crmDialog.close();
+    openBitrixWizard();
+    return;
+  }
   $("crm-endpoint").value = $("crm-token").value = "";
   $("crm-form-status").textContent = "";
   crmFormFields();

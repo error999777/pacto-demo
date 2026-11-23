@@ -470,6 +470,9 @@ function renderCall(call) {
   const editable = !preview && canEdit() && !call.analysis && !review;
   const decision = review?.decision === "rejected" ? "Черновик отклонён" : draft ? "Ждёт подтверждения" : null;
   const media = data.channel_media?.[call.id];
+  const assessment = data.coaching?.calls[call.id];
+  const showScript = assessment && (canManageTeam() || assessment.owner === data.member_id) &&
+    (assessment.checks || data.script_ai_available && call.lines.length);
   const promises = [...(deal?.tasks || []), ...(data.client_tasks || [])].filter(task => task.call_id === call.id);
   const opportunity = call.analysis?.opportunity;
   if (opportunity?.manager_line && !promises.some(task => task.line_id === opportunity.manager_line)) {
@@ -495,6 +498,7 @@ function renderCall(call) {
     }).join("") : '<p class="muted">Подтверждённых обещаний пока нет.</p>'}</section>
     <section><h4>Итог</h4><p>${callResults[result] || "Итог пока не подтверждён."}</p>
       ${outcomeLine ? `<blockquote><small class="muted">${actors[outcomeLine.speaker]}</small><br>«${esc(outcomeLine.text)}»</blockquote>` : ""}</section>
+    ${showScript ? `<button type="button" class="source-link" data-open-script="${esc(call.id)}">Сравнение со скриптом продаж</button>` : ""}
     <p class="small muted">${esc(source?.name || "Импорт JSON")}${call.duration_seconds == null ? "" : " · " + numberFormat.format(call.duration_seconds) + " с"}${review ? " · Проверил(а) " + esc(review.author) : ""}</p>
     ${call.lines.length ? `<details class="call-transcript">
       <summary class="small">${content}</summary>

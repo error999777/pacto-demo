@@ -1,6 +1,7 @@
 "use strict";
 
-const analyticsSections = [["overview", "Обзор"], ["sales", "Продажи"], ["workload", "Команда и каналы"], ["reviews", "Разборы"], ["metrics", "Все метрики"]];
+const analyticsSections = [["overview", "Обзор"], ["sales", "Продажи"], ["workload", "Команда и каналы"],
+  ["skills", "Навыки менеджера"], ["reviews", "Разборы"], ["metrics", "Все метрики"]];
 const analyticsState = {scope: "all", person: "", days: 7, category: "all", query: "",
   section: analyticsSections.find(([key]) => location.hash === "#analytics-" + key)?.[0] || "overview"};
 const analyticsDate = new Intl.DateTimeFormat("ru-RU", {dateStyle: "medium", timeZone: "Europe/Minsk"});
@@ -528,7 +529,8 @@ function renderResults() {
   ];
   const groups = metricGroups(m);
   const rows = Object.fromEntries(groups.map(group => [group.id, group.rows]));
-  $("results").innerHTML = `<div class="analytics-toolbar work-panel">
+  const coaching = analyticsState.section === "skills";
+  $("results").innerHTML = `<div class="analytics-toolbar work-panel"${coaching ? " hidden" : ""}>
     <div class="analytics-toolbar-left">
       <div class="analytics-segment" role="group" aria-label="Разрез аналитики">
         ${analyticsButton("Вся команда", "data-analytics-scope", "all", analyticsState.scope === "all")}
@@ -544,10 +546,10 @@ function renderResults() {
       ${hasData ? '<button type="button" data-analytics-download>Скачать CSV</button>' : ""}
     </div>
   </div>
-  ${!hasData ? '<p class="analytics-card empty">Загрузите сделки или историю общения, чтобы увидеть отчёты.</p>' : `
     <div class="analytics-tabs work-filters" role="group" aria-label="Отчёты">
       ${analyticsSections.map(([key, label]) => analyticsButton(label, "data-analytics-section", key, key === analyticsState.section)).join("")}
     </div>
+    ${coaching ? renderCoaching() : !hasData ? '<p class="analytics-card empty">Загрузите сделки или историю общения, чтобы увидеть отчёты.</p>' : `
     ${analyticsState.section === "overview" ? `
     <section class="analytics-section analytics-entry" aria-labelledby="overview-metrics">
       <h2 id="overview-metrics">Задачи и сроки</h2>
@@ -642,6 +644,10 @@ $("results").addEventListener("click", event => {
     $("metric-search").focus();
   } else if (button.dataset.analyticsSection) {
     analyticsState.section = button.dataset.analyticsSection;
+    if (analyticsState.section === "skills" && canManageTeam() && analyticsState.scope === "person") {
+      const owners = Object.entries(data.coaching?.owners || {}).filter(([, name]) => name === analyticsState.person);
+      if (owners.length === 1) profileState.owner = owners[0][0];
+    }
     history.replaceState(null, "", "#analytics-" + analyticsState.section);
     renderResults();
     $("results").querySelector("[data-analytics-section][aria-pressed=true]").focus();

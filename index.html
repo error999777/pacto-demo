@@ -22,6 +22,7 @@
   <script defer src="assets/crm.js"></script>
   <script defer src="assets/bitrix.js"></script>
   <script defer src="assets/channels.js"></script>
+  <script defer src="assets/setup.js"></script>
 </head>
 <body>
   <section class="login surface" id="login" aria-labelledby="login-title" hidden>
@@ -247,58 +248,15 @@
     <footer class="actions"><button type="button" id="bitrix-back" class="quiet">Назад</button>
       <button type="button" id="bitrix-next" class="primary">Продолжить</button></footer>
   </dialog>
-  <dialog class="settings-dialog crm-dialog" id="crm-dialog" aria-labelledby="crm-dialog-title">
-    <h2 id="crm-dialog-title">Подключить CRM</h2>
-    <form id="crm-form" class="editor">
-      <label for="crm-provider">Система</label>
-      <select id="crm-provider" name="provider" autofocus>
-        <option value="bitrix24">Битрикс24</option>
-        <option value="amocrm">amoCRM</option>
-        <option value="retailcrm">RetailCRM</option>
-        <option value="custom">Самописная CRM</option>
-      </select>
-      <p id="crm-help" class="small muted"></p>
-      <a id="crm-doc" class="small" target="_blank" rel="noopener noreferrer"></a>
-      <div id="crm-fields">
-        <label for="crm-endpoint" id="crm-address-label">Адрес CRM</label>
-        <input id="crm-endpoint" name="endpoint" type="url" maxlength="2048" required spellcheck="false" aria-describedby="crm-help">
-        <div id="crm-token-field">
-          <label for="crm-token" id="crm-token-label">Ключ API</label>
-          <input id="crm-token" name="token" type="password" autocomplete="new-password" spellcheck="false" maxlength="8192">
-        </div>
-        <div class="crm-local-fields">
-          <label id="crm-currency-field">Валюта по умолчанию
-            <select id="crm-currency" name="currency">
-              <option>RUB</option><option>BYN</option><option>KZT</option><option>USD</option><option>EUR</option>
-              <option>UZS</option><option>AMD</option><option>KGS</option><option>AZN</option><option>MDL</option>
-            </select>
-          </label>
-          <label id="crm-offset-field" hidden>Смещение времени CRM
-            <input id="crm-offset" name="utc_offset" value="+03:00" maxlength="6" pattern="[+\-][0-9]{2}:[0-9]{2}">
-          </label>
-        </div>
-        <label id="crm-link-field" hidden>Что загружать
-          <select id="crm-link" name="link_to"></select>
-        </label>
-      </div>
-      <p id="crm-form-status" class="small crm-error" role="status"></p>
-      <div class="actions">
-        <button type="button" class="quiet" id="crm-close">Закрыть</button>
-        <button type="submit" id="crm-submit" class="primary">Подключить и загрузить</button>
-      </div>
-    </form>
-  </dialog>
-  <dialog class="settings-dialog channel-dialog" id="channel-dialog" aria-labelledby="channel-dialog-title">
-    <h2 id="channel-dialog-title">Подключить канал</h2>
-    <p id="channel-help" class="small muted"></p>
-    <a id="channel-doc" class="small" target="_blank" rel="noopener noreferrer"></a>
-    <form id="channel-form">
-      <div id="channel-fields"></div>
-      <p id="channel-form-status" class="small crm-error" role="status"></p>
-      <div class="actions">
-        <button type="button" class="quiet" id="channel-close">Закрыть</button>
-        <button type="submit" id="channel-submit" class="primary">Подключить</button>
-      </div>
+  <dialog class="settings-dialog bitrix-wizard" id="setup-dialog" aria-labelledby="setup-title">
+    <header class="bitrix-header"><span id="setup-logo" aria-hidden="true"></span>
+      <h2 id="setup-title"></h2><button type="button" class="quiet" id="setup-close" aria-label="Закрыть мастер">×</button>
+    </header>
+    <ol class="bitrix-steps" aria-label="Этапы подключения"><li>1. Начало</li><li>2. Доступ</li><li>3. Загрузка</li></ol>
+    <p class="bitrix-demo small" id="setup-demo" hidden>Демо · вымышленные данные</p>
+    <form id="setup-form"><div id="setup-content"></div><p id="setup-status" role="status" class="small"></p>
+      <footer class="actions"><button type="button" class="quiet" id="setup-back">Назад</button>
+        <button type="submit" class="primary" id="setup-next">Продолжить</button></footer>
     </form>
   </dialog>
   <dialog class="settings-dialog channel-dialog pending-dialog" id="channel-pending" aria-labelledby="channel-pending-title">

@@ -150,6 +150,13 @@ button.catalog-example {
 .crm-dialog .actions { justify-content: flex-end; }
 .bitrix-wizard { background: var(--panel); }
 .bitrix-header { display: flex; align-items: center; gap: .7rem; }
+#setup-dialog { inline-size: min(32rem, calc(100% - 1.25rem)); box-sizing: border-box; }
+#setup-content { min-width: 0; overflow-wrap: anywhere; }
+#setup-content :is(input, select) { display: block; inline-size: 100%; box-sizing: border-box; margin: .25rem 0 .7rem; }
+#setup-content .source-link { display: block; margin-block: .5rem; }
+#setup-form footer { position: sticky; inset-block-end: -.25rem; background: var(--panel); padding-block: .4rem; }
+#setup-logo img { display: block; border-radius: .4rem; }
+#setup-logo { flex: none; color: var(--blue); }
 .bitrix-header img { object-fit: contain; flex: none; }
 .bitrix-header h2 { margin: 0; font-size: 1.2rem; line-height: 1.25; }
 .bitrix-header button { margin-inline-start: auto; font-size: 1.5rem; }

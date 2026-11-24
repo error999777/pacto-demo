@@ -40,10 +40,10 @@ const channelFeeds = {
 };
 const recordStates = {queued: "Запись в очереди", speaking: "Расшифровка готовится", ready: "Расшифровка готова",
   retry: "Повторная обработка", model: "Нужна модель Whisper", silent: "Речь не обнаружена"};
-let channelProvider;
+let pendingSource;
 let channelPollTimer;
 let channelLoading = false;
-const channelExampleUrls = new Map();
+
 let queueRows = [];
 let queueNext;
 let linkEvent;
@@ -56,11 +56,12 @@ function renderChannelRows() {
       row.error ? ["Ошибка", "attention"] : !row.next_at ? ["В очереди", "info"] :
       row.succeeded_at ? ["Синхронизировано", "success"] : ["Ожидает загрузки", "neutral"];
     return `<div class="connection-row crm-entry" data-channel-row="${esc(row.id)}">
-      <div class="crm-entry-info"><strong>${providerFields[row.provider].name}</strong><span class="tag status-chip small" data-tone="${status[1]}">${status[0]}</span>
+      <div class="crm-entry-info"><strong>${esc(setupCatalog[row.service]?.name || providerFields[row.provider].name)}</strong><span class="tag status-chip small" data-tone="${status[1]}">${status[0]}</span>
       <p class="small muted">${esc(row.host)} · ${providerFields[row.provider].type}</p>
       ${row.counts ? `<p class="small muted">Событий за загрузку ${row.counts.events} · Обновлений в досье ${row.counts.changed} · ${esc(date(row.succeeded_at))}</p>` : ""}
-      ${row.error ? `<p class="small crm-error">${esc(row.error)}</p>` : ""}</div>
-      ${canManageTeam() ? `<div class="actions connection-actions">
+      ${row.error ? `<p class="small crm-error">${esc(row.error)}</p>` : ""}
+      ${setupResultLink(row.id)}</div>
+      ${!preview && canManageTeam() ? `<div class="actions connection-actions">
         <button type="button" data-channel-state="sync"${!row.enabled || row.running ? " disabled" : ""}>Обновить сейчас</button>
         <button type="button" data-channel-state="state" data-enable="${!row.enabled}">${row.enabled ? "Приостановить" : "Возобновить"}</button>
       </div>` : ""}
@@ -109,41 +110,6 @@ function pollChannels() {
   }, 4000);
 }
 
-function channelForm(id, serviceName, category) {
-  channelProvider = id;
-  const provider = providerFields[id];
-  const feed = id === "channel_feed" ? (channelFeeds[category] ?? channelFeeds.chat) : null;
-  const help = feed?.help ?? provider.help;
-  const canConnect = !preview && canManageTeam();
-  $("channel-dialog-title").textContent = serviceName || provider.name;
-  $("channel-help").textContent = help + (preview ? " Подключение работает в локальном Pacto." :
-    !canManageTeam() ? " Подключениями управляет руководитель." : "");
-  $("channel-form-status").textContent = "";
-  $("channel-submit").hidden = !canConnect;
-  $("channel-fields").innerHTML = !canConnect ? "" : provider.fields.map(([name, label, type, initial, required = true], index) =>
-    `<label for="channel-${name}">${label}</label><input id="channel-${name}" name="${name}" type="${type}" maxlength="8192"
-      value="${esc(initial || "")}" autocomplete="${type === "password" ? "new-password" : "off"}" spellcheck="false"
-      ${index ? "" : "autofocus aria-describedby=\"channel-help\""} ${required ? "required" : ""}>`).join("");
-  const doc = $("channel-doc");
-  if (feed) {
-    const {event} = feed;
-    const {channel} = event;
-    if (!channelExampleUrls.has(channel)) {
-      const example = {events: [{external_id: "sample-1", at: "2026-11-21T09:00:00+03:00", ...event}]};
-      const blob = new Blob([JSON.stringify(example, null, 2)], {type: "application/json"});
-      channelExampleUrls.set(channel, URL.createObjectURL(blob));
-    }
-    doc.href = channelExampleUrls.get(channel);
-    doc.textContent = "Скачать пример JSON";
-    doc.download = "pacto-channel-example.json";
-  } else {
-    doc.href = provider.docs;
-    doc.textContent = "Документация подключения";
-    doc.removeAttribute("download");
-  }
-  $("channel-dialog").showModal();
-}
-
 function openDemoHistory() {
   if ($("channel-pending").open) $("channel-pending").close();
   view = "clients";
@@ -164,8 +130,11 @@ async function loadPending(append = false) {
     $("channel-pending-status").textContent = "";
     return;
   }
+  const query = new URLSearchParams();
+  if (pendingSource) query.set("source_id", pendingSource);
+  if (append && queueNext) query.set("before", queueNext);
   const [result, workspace] = await Promise.all([
-    api("/api/channels/pending" + (append && queueNext ? "?before=" + queueNext : "")),
+    api("/api/channels/pending" + "?" + query),
     append ? linkWorkspace : api("/api/pipeline")
   ]);
   linkWorkspace = workspace;
@@ -207,8 +176,8 @@ $("settings").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.hasAttribute("data-channel-demo")) openDemoHistory();
-  else if (button.dataset.channelProvider) channelForm(button.dataset.channelProvider, button.dataset.serviceName, button.dataset.serviceCategory);
   else if (button.id === "open-channel-pending") {
+    pendingSource = undefined;
     $("channel-pending-content").innerHTML = "";
     $("channel-pending").showModal();
     run(null, loadPending, $("channel-pending-status"));
@@ -221,21 +190,7 @@ $("settings").addEventListener("click", event => {
     });
   }
 });
-$("channel-dialog").addEventListener("close", () => { $("channel-fields").innerHTML = ""; });
-$("channel-close").addEventListener("click", () => $("channel-dialog").close());
 $("channel-pending-close").addEventListener("click", () => $("channel-pending").close());
-$("channel-form").addEventListener("submit", event => {
-  event.preventDefault();
-  if (preview || !canManageTeam()) return;
-  const fields = Object.fromEntries(new FormData(event.currentTarget));
-  run(event.submitter, async () => {
-    await api("/api/channels/connections", {provider: channelProvider, ...fields});
-    $("channel-dialog").close();
-    await refreshChannelRows();
-    pollChannels();
-    notify("Канал подключён. Pacto начнёт загрузку.");
-  }, $("channel-form-status"));
-});
 $("channel-pending").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (button?.dataset.linkEvent) linkForm(entity(queueRows, button.dataset.linkEvent));
@@ -257,7 +212,12 @@ $("channel-pending").addEventListener("submit", event => {
   run(event.submitter, async () => {
     const result = await api(`/api/channels/events/${linkEvent.id}/link`,
       {client_id: fields.client_id, deal_id: fields.deal_id || null, identity: fields.identity || null});
-    await loadPending();
+    if (pendingSource) {
+      const callId = linkEvent.id;
+      await refresh();
+      $("channel-pending").close();
+      navigateSetupResult(fields.client_id, fields.deal_id || null, callId);
+    } else await loadPending();
     notify(`Событий добавлено в досье: ${result.linked}.`);
   }, $("channel-pending-status"));
 });

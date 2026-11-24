@@ -26,24 +26,24 @@ const serviceCards = {
   ],
   phone: [
     ["channel", "zadarma", "Zadarma", "zadarma.png", "Звонки АТС и записи разговоров", "#70d6ff"],
-    ["channel", "channel_feed", "MANGO OFFICE", "mango-office.png", "Звонки и записи облачной АТС через адаптер", "#8de4a9"],
-    ["channel", "channel_feed", "Asterisk", "asterisk.png", "Звонки и записи Asterisk через адаптер", "#ffc178"],
-    ["channel", "channel_feed", "Своя АТС через API", "{ }", "Звонки и записи через свой адаптер", "#a1bcff"]
+    ["channel", "channel_feed", "MANGO OFFICE", "mango-office.png", "Звонки и записи облачной АТС через адаптер", "#8de4a9", "mango"],
+    ["channel", "channel_feed", "Asterisk", "asterisk.png", "Звонки и записи Asterisk через адаптер", "#ffc178", "asterisk"],
+    ["channel", "channel_feed", "Своя АТС через API", "{ }", "Звонки и записи через свой адаптер", "#a1bcff", "phone_api"]
   ],
   meeting: [
     ["channel", "zoom", "Zoom", "zoom.png", "Облачные записи встреч и расшифровки", "#73a9ff"],
     ["channel", "meet", "Google Meet", "google-meet.png", "Записи из Google Drive и расшифровки", "#72e9bd"],
-    ["channel", "channel_feed", "Свой сервис видеовстреч через API", "{ }", "Встречи, записи и расшифровки через адаптер", "#c6a8ff"]
+    ["channel", "channel_feed", "Свой сервис видеовстреч через API", "{ }", "Встречи, записи и расшифровки через адаптер", "#c6a8ff", "meeting_api"]
   ],
   chat: [
     ["channel", "telegram", "Telegram", "telegram.png", "Сообщения и голосовые рабочего бота", "#68ceff"],
-    ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5"],
-    ["channel", "channel_feed", "Свой мессенджер через API", "{ }", "Сообщения через свой JSON-адаптер", "#c6a8ff"]
+    ["channel", "channel_feed", "WhatsApp Business", "whatsapp-business.png", "Переписка через JSON-адаптер", "#7be6a5", "whatsapp"],
+    ["channel", "channel_feed", "Свой мессенджер через API", "{ }", "Сообщения через свой JSON-адаптер", "#c6a8ff", "chat_api"]
   ],
   mail: [
-    ["source", "mail", "Gmail", "gmail.png", "Письма из Gmail через адаптер", "#ff9b83"],
-    ["source", "mail", "Outlook", "outlook.png", "Письма из Outlook через адаптер", "#78bdff"],
-    ["source", "mail", "Своя почта через API", "@", "Письма из вашего ящика через JSON API", "#f1ca99"]
+    ["source", "mail", "Gmail", "gmail.png", "Письма из Gmail через адаптер", "#ff9b83", "gmail"],
+    ["source", "mail", "Outlook", "outlook.png", "Письма из Outlook через адаптер", "#78bdff", "outlook"],
+    ["source", "mail", "Своя почта через API", "@", "Письма из вашего ящика через JSON API", "#f1ca99", "mail_api"]
   ]
 };
 const categories = [["all", "Все"], ...Object.entries(sourceTypes).map(([id, type]) => [id, type.name])];
@@ -52,9 +52,9 @@ let sourceFilter = location.hash === "#channels" ? "meeting" :
   categories.some(([id]) => id === linkedCategory) ? linkedCategory : "crm";
 let setupCategory = "crm";
 
-function renderServiceCard([mode, provider, name, mark, description, accent], category) {
-  const action = !preview && (mode === "source" ? canEdit() : canManageTeam()) ? "Подключить" : "Как подключить";
-  const control = {crm: "data-crm-provider", channel: "data-channel-provider", source: "data-source-type"}[mode];
+function renderServiceCard([mode, provider, name, mark, description, accent, key = provider], category) {
+  const action = preview ? "Попробовать" : canManageTeam() ? "Подключить" : "Как подключить";
+  const control = provider === "bitrix24" ? "data-crm-provider" : "data-setup-service";
   const heading = sourceFilter === "all" ? "h4" : "h3";
   const logo = mark.endsWith(".png");
   return `<article class="service-card" style="--service-accent: ${accent}">
@@ -64,7 +64,7 @@ function renderServiceCard([mode, provider, name, mark, description, accent], ca
       <${heading} translate="no">${name}</${heading}>
       <p>${description}</p>
     </div>
-    <button class="service-action" type="button" ${control}="${provider}" data-service-name="${name}"
+    <button class="service-action" type="button" ${control}="${key}" data-service-name="${name}"
       data-service-category="${category}" aria-label="${action} ${name}">
       ${action}<span aria-hidden="true"></span>
     </button>
@@ -135,7 +135,8 @@ function renderConnection(source) {
     <div><strong>${esc(source.name)}</strong>
       ${source.last_batch_at ? `<p class="small muted">${esc(date(source.last_batch_at))} · записей: ${source.last_batch_count}</p>` : ""}
     </div><span class="tag status-chip" data-tone="${tone}">${status}</span>
-    ${canEdit() ? `<div class="connection-actions actions">
+    ${source.category === "mail" ? setupResultLink(source.id) : ""}
+    ${!preview && (source.service ? canManageTeam() : canEdit()) ? `<div class="connection-actions actions">
       <button type="button" data-source-toggle="${esc(source.id)}" data-enable="${!source.enabled}">${source.enabled ? "Приостановить" : "Возобновить"}</button>
       <button type="button" data-source-rotate="${esc(source.id)}">Новый ключ</button>
     </div>` : ""}
@@ -248,7 +249,12 @@ function bindSettings() {
     run(event.submitter, async () => {
       const result = await api(`/api/pipeline/sources/${id}/key`, {});
       $("rotate-dialog").close();
-      showSourceCredentials(result, entity(data.sources, id).category);
+      const source = entity(data.sources, id);
+      if (source.service && setupCatalog[source.service]) {
+        openSetup({...setupCatalog[source.service], name: source.name});
+        Object.assign(setupSession, result);
+        setupMailDelivery(setupSession);
+      } else showSourceCredentials(result, source.category);
     }, $("rotate-error"));
   });
   $("credential-dialog").addEventListener("close", () => {

@@ -1,23 +1,9 @@
 "use strict";
 
-const crmProviders = {
-  bitrix24: {name: "Битрикс24", placeholder: "https://portal.bitrix24.ru/rest/…",
-    help: "Создайте входящий вебхук с правами на чтение CRM и задач. Вставьте полный адрес вебхука.",
-    docs: "https://apidocs.bitrix24.ru/local-integrations/local-webhooks.html"},
-  amocrm: {name: "amoCRM", placeholder: "https://account.amocrm.ru",
-    help: "В настройках приватной или внешней интеграции выпустите долгосрочный токен. Скопируйте адрес аккаунта и токен.",
-    docs: "https://www.amocrm.ru/developers/content/oauth/step-by-step"},
-  retailcrm: {name: "RetailCRM", placeholder: "https://shop.retailcrm.ru",
-    help: "Выпустите ключ с доступом на чтение клиентов, заказов и задач. Звонки можно добавить отдельной выгрузкой телефонии.",
-    docs: "https://pkg.go.dev/github.com/retailcrm/api-client-go/v5"},
-  custom: {name: "Самописная CRM", placeholder: "https://crm.example.com/pacto/export",
-    help: "Укажите GET-адрес JSON-выгрузки. Поддерживаются полный набор CRM или отдельные звонки к уже подключённой CRM."}
-};
-
-const crmDialog = $("crm-dialog");
+const crmProviders = {bitrix24: {name: "Битрикс24"}, amocrm: {name: "amoCRM"}, retailcrm: {name: "RetailCRM"}, custom: {name: "Самописная CRM"}};
 let crmPollTimer;
 let crmPollPending = false;
-let crmExampleUrl;
+
 
 function crmConnectionRows() {
   const connections = data.crm_connections || [];
@@ -37,7 +23,7 @@ function crmConnectionRows() {
           <p class="small muted">Последняя загрузка ${esc(date(item.succeeded_at))} · Изменений ${count.changed}
           ${count.skipped ? " · Без связи или даты " + count.skipped : ""}</p>` : ""}
         ${item.error ? `<p class="small crm-error">${esc(item.error)}</p>` : ""}
-        ${item.provider === "bitrix24" ? `<button type="button" class="source-link" data-bitrix-result="${esc(item.id)}">Результат загрузки</button>` : ""}
+        ${item.provider === "bitrix24" ? `<button type="button" class="source-link" data-bitrix-result="${esc(item.id)}">Результат загрузки</button>` : setupResultLink(item.id)}
       </div>
       ${!preview && canManageTeam() ? `<div class="connection-actions actions">
         <button type="button" data-crm-action="sync"${!item.enabled || waiting || item.running ? " disabled" : ""}>Обновить сейчас</button>
@@ -76,60 +62,11 @@ function pollCrm() {
   }, 4000);
 }
 
-function crmFormFields() {
-  const id = $("crm-provider").value;
-  const provider = crmProviders[id];
-  const bitrix = id === "bitrix24";
-  const custom = id === "custom";
-  $("crm-help").textContent = provider.help + (preview ? " Подключение доступно в локальном Pacto." :
-    !canManageTeam() ? " Подключениями управляет руководитель." : "");
-  $("crm-address-label").textContent = bitrix ? "Адрес вебхука" : custom ? "Адрес JSON-выгрузки" : "Адрес аккаунта";
-  $("crm-endpoint").type = bitrix ? "password" : "url";
-  $("crm-endpoint").autocomplete = bitrix ? "new-password" : "url";
-  $("crm-endpoint").placeholder = provider.placeholder;
-  $("crm-token-field").hidden = bitrix;
-  $("crm-token").required = !preview && !bitrix && !custom;
-  $("crm-token-label").textContent = id === "amocrm" ? "Долгосрочный токен" : custom ? "Bearer-токен (если нужен)" : "Ключ API";
-  $("crm-offset-field").hidden = id !== "retailcrm";
-  $("crm-currency-field").hidden = bitrix || custom;
-  const connections = (data.crm_connections || []).filter(item => item.provider !== "custom");
-  $("crm-link-field").hidden = !custom || !connections.length;
-  $("crm-link").innerHTML = '<option value="">Клиенты, сделки, задачи и звонки</option>' + connections.map(item =>
-    `<option value="${esc(item.id)}">Только звонки для ${esc(crmProviders[item.provider].name + " · " + item.host)}</option>`).join("");
-  const docs = $("crm-doc");
-  docs.textContent = custom ? "Скачать синтетический пример JSON" : "Как получить доступ";
-  docs.href = custom ? crmExampleUrl : provider.docs;
-  if (custom) docs.setAttribute("download", "pacto-crm-example.json");
-  else docs.removeAttribute("download");
-}
-
-function showCrmForm(provider) {
-  if (provider === "bitrix24") {
-    openBitrixWizard();
-    return;
-  }
-  $("crm-form").reset();
-  $("crm-form-status").textContent = "";
-  $("crm-provider").value = provider;
-  $("crm-fields").hidden = preview || !canManageTeam();
-  $("crm-submit").hidden = preview || !canManageTeam();
-  if (!crmExampleUrl) {
-    const example = sourceExample("crm");
-    const deal = example.deals[0];
-    example.tasks = [{id: "task-1", deal_id: deal.id, title: "Подготовить оценку", side: "manager", updated_at: deal.updated_at}];
-    example.calls = [{id: "call-1", client_id: deal.client_id, deal_id: deal.id, at: deal.updated_at,
-      title: "Входящий звонок", duration_seconds: 428, lines: [{id: "r1", speaker: "client", text: "Нужна оценка интеграции."}]}];
-    crmExampleUrl = URL.createObjectURL(new Blob([JSON.stringify(example, null, 2)], {type: "application/json"}));
-  }
-  crmFormFields();
-  crmDialog.showModal();
-}
-
 $("settings").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.dataset.crmProvider) {
-    showCrmForm(button.dataset.crmProvider);
+    openBitrixWizard();
   } else if (button.dataset.crmAction) {
     const id = button.closest("[data-crm-row]").dataset.crmRow;
     const action = button.dataset.crmAction;
@@ -139,34 +76,4 @@ $("settings").addEventListener("click", event => {
       notify(action === "sync" ? "Загрузка поставлена в очередь." : "Настройки синхронизации сохранены.");
     });
   }
-});
-
-$("crm-provider").addEventListener("change", () => {
-  if ($("crm-provider").value === "bitrix24") {
-    crmDialog.close();
-    openBitrixWizard();
-    return;
-  }
-  $("crm-endpoint").value = $("crm-token").value = "";
-  $("crm-form-status").textContent = "";
-  crmFormFields();
-});
-$("crm-close").addEventListener("click", () => crmDialog.close());
-crmDialog.addEventListener("close", () => {
-  $("crm-endpoint").value = $("crm-token").value = "";
-});
-$("crm-form").addEventListener("submit", event => {
-  event.preventDefault();
-  if (preview || !canManageTeam()) return;
-  const fields = Object.fromEntries(new FormData(event.currentTarget));
-  fields.link_to = fields.provider === "custom" && fields.link_to ? fields.link_to : null;
-  const status = $("crm-form-status");
-  status.textContent = "";
-  run(event.submitter, async () => {
-    await api("/api/crm/connections", fields);
-    crmDialog.close();
-    await refreshCrmRows();
-    pollCrm();
-    notify("Подключение сохранено. Pacto начнёт загрузку.");
-  }, status);
 });

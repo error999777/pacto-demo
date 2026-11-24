@@ -103,7 +103,7 @@ function showLogin() {
 
 function demoSnapshot() {
   const member = demoRole === "lead" ? "local-lead" : "local-manager";
-  return {...withDemoBitrix(snapshots[snapshotIndex]), role: demoRole, member_id: member,
+  return {...withDemoServices(withDemoBitrix(snapshots[snapshotIndex])), role: demoRole, member_id: member,
     name: demoRole === "lead" ? "Анна Соколова" : "Мария Волкова",
     reminders: demoReminders(member)};
 }
@@ -115,7 +115,7 @@ async function refresh() {
   $("logout").hidden = preview;
   $("actor").textContent = data.name;
   $("preview-bar").hidden = !preview;
-  $("reset-preview").hidden = snapshotIndex === 0 && !demoBitrixConnected;
+  $("reset-preview").hidden = snapshotIndex === 0 && !demoBitrixConnected && !demoServices.size;
   render();
 }
 
@@ -768,6 +768,7 @@ $("import-form").addEventListener("submit", event => {
 $("reset-preview").addEventListener("click", () => {
   snapshotIndex = 0;
   demoBitrixConnected = false;
+  demoServices.clear();
   data = demoSnapshot();
   $("reset-preview").hidden = true;
   setView("queue");

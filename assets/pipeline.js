@@ -499,6 +499,12 @@ function renderCall(call) {
     }).join("") : '<p class="muted">Подтверждённых обещаний пока нет.</p>'}</section>
     <section><h4>Итог</h4><p>${callResults[result] || "Итог пока не подтверждён."}</p>
       ${outcomeLine ? `<blockquote><small class="muted">${actors[outcomeLine.speaker]}</small><br>«${esc(outcomeLine.text)}»</blockquote>` : ""}</section>
+    ${(call.channel || "call") === "call" && (preview || canManageTeam() || assessment?.owner === data.member_id) ?
+      `<section data-insight-call="${esc(call.id)}"><div class="actions">
+        <button type="button" data-insight="advice"${call.lines.length ? "" : " disabled"}>Совет для следующего шага</button>
+        <button type="button" data-insight="analysis"${call.lines.length ? "" : " disabled"}>Аналитика звонка</button></div>
+        <small class="muted">${!call.lines.length ? "Нужна расшифровка звонка" : preview ? "Демо · пример по вымышленному звонку" : "По нажатию расшифровка отправится в DeepSeek"}</small>
+        <div role="status" data-insight-output></div></section>` : ""}
     ${showScript ? `<button type="button" class="source-link" data-open-script="${esc(call.id)}">Сравнение со скриптом продаж</button>` : ""}
     <p class="small muted">${esc(source?.name || "Импорт JSON")}${call.duration_seconds == null ? "" : " · " + numberFormat.format(call.duration_seconds) + " с"}${review ? " · Проверил(а) " + esc(review.author) : ""}</p>
     ${call.lines.length ? `<details class="call-transcript">
@@ -548,6 +554,41 @@ function minskInput(value) {
   const format = new Intl.DateTimeFormat("sv-SE", {year:"numeric", month:"2-digit", day:"2-digit",
     hour:"2-digit", minute:"2-digit", timeZone:"Europe/Minsk"});
   return format.format(new Date(value)).replace(" ", "T");
+}
+
+async function showCallInsight(button) {
+  const panel = button.closest("[data-insight-call]");
+  const output = panel.querySelector("[data-insight-output]");
+  const call = entity(data.calls, panel.dataset.insightCall);
+  const mode = button.dataset.insight;
+  const controls = panel.querySelectorAll("button");
+  controls.forEach(control => { control.disabled = true; });
+  output.textContent = "Готовим ответ…";
+  try {
+    let result;
+    if (preview) {
+      const line = call.lines.find(item => item.speaker === "client") || call.lines[0];
+      const specific = call.id === "alpha-2";
+      const action = specific ? "Предложите точное время после 15:00 и включите в приглашение разбор двух примеров заказов." :
+        "Спросите клиента, какой результат он хочет получить по этому вопросу и когда удобно его проверить.";
+      result = {summary: mode === "advice" ? action : specific ? "Встреча согласована, точное время осталось открытым." :
+        "Проверьте, одинаково ли стороны понимают результат разговора.",
+        points: [{line_id: line.id, observation: specific ? "Клиент назвал диапазон времени." : "Эта реплика задаёт тему для уточнения.",
+          action: mode === "advice" ? "Запишите ответ клиента в досье." : action}]};
+    } else result = await api("/api/pipeline/calls/" + encodeURIComponent(call.id) + "/insight", {mode});
+    output.innerHTML = `<h4>${esc(button.textContent)}</h4><p>${esc(result.summary)}</p>` +
+      result.points.map(point => {
+        const line = call.lines.find(item => item.id === point.line_id);
+        return `<p><strong>${esc(point.observation)}</strong></p>
+          ${line ? `<blockquote>«${esc(line.text)}»</blockquote>` : ""}
+          <p><strong>Что сделать</strong> · ${esc(point.action)}</p>`;
+      }).join("");
+  } catch (error) {
+    if (error.status === 401) showLogin();
+    else output.textContent = error.message;
+  } finally {
+    controls.forEach(control => { control.disabled = false; });
+  }
 }
 
 function openCall(id, lineId) {
@@ -607,7 +648,9 @@ $("results").addEventListener("click", event => {
 $("detail").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
-  if (button.hasAttribute("data-back")) {
+  if (button.dataset.insight) {
+    showCallInsight(button);
+  } else if (button.hasAttribute("data-back")) {
     $("main").dataset.open = "false";
     ($("items").querySelector('[aria-pressed="true"]') || $("items").querySelector("button") || $("title")).focus();
   } else if (button.dataset.project) {

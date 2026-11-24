@@ -29,7 +29,7 @@ const setupGuides = {
     "Добавьте синтетический звонок в выгрузку и проверьте её по примеру ниже."],
   zoom: ["В Zoom App Marketplace создайте приложение Server-to-Server OAuth для аккаунта организатора.",
     "Разрешите чтение облачных записей организатора и активируйте приложение.",
-    "Подготовьте Account ID, Client ID, Client Secret и email организатора. Завершите тестовую встречу с облачной записью.", providerFields.zoom.docs],
+    "Подготовьте Account ID, Client ID, Client Secret и email организатора. Завершите тестовую встречу с облачной записью. Pacto возьмёт готовую расшифровку Zoom или распознает запись через Whisper.", providerFields.zoom.docs],
   meet: ["В Google Cloud включите Google Meet REST API и Google Drive API. Создайте OAuth-клиент.",
     "Разрешите чтение завершённых встреч и их файлов (meetings.space.readonly и drive.meet.readonly).",
     "Получите refresh token с offline-доступом от организатора. Проверьте, что ему доступны запись или расшифровка тестовой встречи.", providerFields.meet.docs],

@@ -115,7 +115,7 @@ async function refresh() {
   $("logout").hidden = preview;
   $("actor").textContent = data.name;
   $("preview-bar").hidden = !preview;
-  $("reset-preview").hidden = snapshotIndex === 0 && !demoBitrixConnected && !demoServices.size;
+  $("reset-preview").hidden = snapshotIndex === 0 && !demoBitrixConnected && !demoServices.size && !demoCallInsights.size;
   render();
 }
 
@@ -503,7 +503,7 @@ function renderCall(call) {
       `<section data-insight-call="${esc(call.id)}"><div class="actions">
         <button type="button" data-insight="advice"${call.lines.length ? "" : " disabled"}>Совет для следующего шага</button>
         <button type="button" data-insight="analysis"${call.lines.length ? "" : " disabled"}>Аналитика звонка</button></div>
-        <small class="muted">${!call.lines.length ? "Нужна расшифровка звонка" : preview ? "Демо · пример по вымышленному звонку" : "По нажатию расшифровка отправится в DeepSeek"}</small>
+        <small class="muted">${!call.lines.length ? "Нужна расшифровка звонка" : preview ? "Демо · пример по вымышленному звонку" : "Повторное открытие использует сохранённый разбор. При первом запросе расшифровка отправится в DeepSeek."}</small>
         <div role="status" data-insight-output></div></section>` : ""}
     ${showScript ? `<button type="button" class="source-link" data-open-script="${esc(call.id)}">Сравнение со скриптом продаж</button>` : ""}
     <p class="small muted">${esc(source?.name || "Импорт JSON")}${call.duration_seconds == null ? "" : " · " + numberFormat.format(call.duration_seconds) + " с"}${review ? " · Проверил(а) " + esc(review.author) : ""}</p>
@@ -556,6 +556,19 @@ function minskInput(value) {
   return format.format(new Date(value)).replace(" ", "T");
 }
 
+const demoInsightStore = "pacto.demo.insights.v1";
+function readDemoInsights() {
+  try { return new Map(JSON.parse(localStorage.getItem(demoInsightStore) || "[]")); }
+  catch { return new Map(); }
+}
+const demoCallInsights = preview ? readDemoInsights() : new Map();
+function saveDemoInsights() {
+  try {
+    if (demoCallInsights.size) localStorage.setItem(demoInsightStore, JSON.stringify([...demoCallInsights]));
+    else localStorage.removeItem(demoInsightStore);
+  } catch { /* The in-memory preview still works with browser storage disabled. */ }
+}
+
 async function showCallInsight(button) {
   const panel = button.closest("[data-insight-call]");
   const output = panel.querySelector("[data-insight-output]");
@@ -566,7 +579,10 @@ async function showCallInsight(button) {
   output.textContent = "Готовим ответ…";
   try {
     let result;
-    if (preview) {
+    const demoKey = preview && JSON.stringify([call.id, mode, call.at, call.lines]);
+    if (preview && demoCallInsights.has(demoKey)) {
+      result = {...demoCallInsights.get(demoKey), cached: true};
+    } else if (preview) {
       const line = call.lines.find(item => item.speaker === "client") || call.lines[0];
       const specific = call.id === "alpha-2";
       const action = specific ? "Предложите точное время после 15:00 и включите в приглашение разбор двух примеров заказов." :
@@ -575,8 +591,11 @@ async function showCallInsight(button) {
         "Проверьте, одинаково ли стороны понимают результат разговора.",
         points: [{line_id: line.id, observation: specific ? "Клиент назвал диапазон времени." : "Эта реплика задаёт тему для уточнения.",
           action: mode === "advice" ? "Запишите ответ клиента в досье." : action}]};
+      demoCallInsights.set(demoKey, result);
+      $("reset-preview").hidden = false;
+      saveDemoInsights();
     } else result = await api("/api/pipeline/calls/" + encodeURIComponent(call.id) + "/insight", {mode});
-    output.innerHTML = `<h4>${esc(button.textContent)}</h4><p>${esc(result.summary)}</p>` +
+    output.innerHTML = `<h4>${esc(button.textContent)}</h4><small class="muted">${result.cached ? "Сохранённый результат" : preview ? "Учебный пример сохранён" : "Результат сохранён"}</small><p>${esc(result.summary)}</p>` +
       result.points.map(point => {
         const line = call.lines.find(item => item.id === point.line_id);
         return `<p><strong>${esc(point.observation)}</strong></p>
@@ -812,6 +831,8 @@ $("reset-preview").addEventListener("click", () => {
   snapshotIndex = 0;
   demoBitrixConnected = false;
   demoServices.clear();
+  demoCallInsights.clear();
+  saveDemoInsights();
   data = demoSnapshot();
   $("reset-preview").hidden = true;
   setView("queue");
